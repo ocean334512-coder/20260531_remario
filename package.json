@@ -1,0 +1,21 @@
+{
+  "name": "super-mario",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "restart": "lsof -ti :5173 | xargs kill -9 2>/dev/null; rm -rf node_modules/.vite && vite --force --host 127.0.0.1",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "deploy:vercel": "npm run build && npx vercel --prod",
+    "deploy:netlify": "npm run build && npx netlify deploy --prod --dir=dist"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2",
+    "vite": "^8.0.12"
+  },
+  "dependencies": {
+    "phaser": "^4.1.0"
+  }
+}
