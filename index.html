@@ -11,6 +11,28 @@
     <title>Super Mario - Stage 1</title>
   </head>
   <body>
+    <div id="name-entry" class="name-entry">
+      <form id="name-entry-form" class="name-entry__panel">
+        <h1 class="name-entry__title">Super Mario</h1>
+        <p class="name-entry__desc">이름을 입력하고 게임을 시작하세요</p>
+        <input
+          id="player-name"
+          class="name-entry__input"
+          type="text"
+          maxlength="20"
+          placeholder="플레이어 이름"
+          autocomplete="nickname"
+          enterkeyhint="go"
+        />
+        <p id="name-entry-error" class="name-entry__error" hidden></p>
+        <button type="submit" class="name-entry__btn">START</button>
+      </form>
+    </div>
+    <div id="leaderboard-panel" class="leaderboard-panel" hidden>
+      <h2 class="leaderboard-panel__title">🏆 TOP 10</h2>
+      <ol id="leaderboard-list" class="leaderboard-panel__list"></ol>
+      <p id="leaderboard-status" class="leaderboard-panel__status"></p>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

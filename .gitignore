@@ -25,3 +25,11 @@ dist-ssr
 
 .vercel
 .netlify
+
+# Backend
+backend/data/
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+*.db
+.env

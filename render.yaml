@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: mario-leaderboard-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_PATH
+        value: /tmp/mario.db
+      - key: CORS_ORIGINS
+        value: http://127.0.0.1:5173,http://localhost:5173

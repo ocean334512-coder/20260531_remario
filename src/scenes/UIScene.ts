@@ -9,6 +9,7 @@ import {
   formatGameOverMessage,
 } from '../utils/distance';
 import { GameScene } from './GameScene';
+import { hideLeaderboard, saveAndLoadLeaderboard } from '../services/leaderboardUi';
 
 type ProgressPayload = { progressM: number; totalM: number; final?: boolean };
 
@@ -72,8 +73,8 @@ export class UIScene extends Phaser.Scene {
     this.distanceText.setScrollFactor(0);
 
     const help = isTouchDevice()
-      ? '하단 ◀▶ 이동 | 우측 JUMP · v20'
-      : '← → 이동 | Space 점프 | R 재시작 · v20';
+      ? '하단 ◀▶ 이동 | 우측 JUMP · v21'
+      : '← → 이동 | Space 점프 | R 재시작 · v21';
 
     this.helpText = this.add.text(w / 2, 38, help, {
       fontFamily: 'monospace',
@@ -185,6 +186,7 @@ export class UIScene extends Phaser.Scene {
       this.showDeathPopup(payload.progressM, payload.totalM, final);
       if (final) {
         this.showOverlay('', formatGameOverMessage(payload.progressM, payload.totalM), true);
+        void saveAndLoadLeaderboard(payload.progressM);
       }
     });
     gameScene.events.on('stage-clear', (payload: ProgressPayload) => {
@@ -202,6 +204,7 @@ export class UIScene extends Phaser.Scene {
       this.distanceText.setText(formatDistanceHud(0, this.stageTotalM));
       this.fireworks.stop();
       this.hideDeathPopup();
+      hideLeaderboard();
       this.hideOverlay();
     });
 

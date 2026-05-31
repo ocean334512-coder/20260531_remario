@@ -1,21 +1,28 @@
 import Phaser from 'phaser';
 import { gameConfig, syncGameDimensions } from './config/gameConfig';
+import { waitForPlayerName } from './services/playerSession';
 import './style.css';
 
-const game = new Phaser.Game(gameConfig);
+async function bootstrap(): Promise<void> {
+  await waitForPlayerName();
 
-const onLayoutChange = (): void => {
-  syncGameDimensions(game);
-};
+  const game = new Phaser.Game(gameConfig);
 
-window.addEventListener('resize', onLayoutChange);
-window.addEventListener('orientationchange', () => {
-  window.setTimeout(onLayoutChange, 150);
-});
-
-if (screen.orientation?.lock) {
-  const tryLockPortrait = (): void => {
-    screen.orientation.lock('portrait-primary').catch(() => undefined);
+  const onLayoutChange = (): void => {
+    syncGameDimensions(game);
   };
-  document.body.addEventListener('touchstart', tryLockPortrait, { once: true });
+
+  window.addEventListener('resize', onLayoutChange);
+  window.addEventListener('orientationchange', () => {
+    window.setTimeout(onLayoutChange, 150);
+  });
+
+  if (screen.orientation?.lock) {
+    const tryLockPortrait = (): void => {
+      screen.orientation.lock('portrait-primary').catch(() => undefined);
+    };
+    document.body.addEventListener('touchstart', tryLockPortrait, { once: true });
+  }
 }
+
+bootstrap();
