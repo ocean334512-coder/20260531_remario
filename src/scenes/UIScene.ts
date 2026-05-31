@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
 import { isTouchDevice } from '../config/gameConfig';
+import { STAGE1, TILE_SIZE, parseStage } from '../levels/stage1';
+import { Minimap } from '../systems/Minimap';
+import { GameScene } from './GameScene';
 
 export class UIScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
@@ -8,6 +11,7 @@ export class UIScene extends Phaser.Scene {
   private restartHintText!: Phaser.GameObjects.Text;
   private helpText!: Phaser.GameObjects.Text;
   private restartTapZone!: Phaser.GameObjects.Rectangle;
+  private minimap!: Minimap;
 
   constructor() {
     super('UIScene');
@@ -39,8 +43,8 @@ export class UIScene extends Phaser.Scene {
     this.livesText.setScrollFactor(0);
 
     const help = isTouchDevice()
-      ? '하단 ◀▶ 이동 | 우측 JUMP · v17'
-      : '← → 이동 | Space 점프 | R 재시작 · v17';
+      ? '하단 ◀▶ 이동 | 우측 JUMP · v18'
+      : '← → 이동 | Space 점프 | R 재시작 · v18';
 
     this.helpText = this.add.text(w / 2, 40, help, {
       fontFamily: 'monospace',
@@ -106,6 +110,26 @@ export class UIScene extends Phaser.Scene {
       this.livesText.setText('LIVES 3');
       this.hideOverlay();
     });
+
+    const { width, height } = parseStage(STAGE1);
+    this.minimap = new Minimap(
+      this,
+      STAGE1,
+      TILE_SIZE,
+      width * TILE_SIZE,
+      height * TILE_SIZE,
+    );
+  }
+
+  update(): void {
+    const gameScene = this.scene.get('GameScene') as GameScene;
+    if (!gameScene?.player?.active) return;
+
+    this.minimap.updatePlayer(
+      gameScene.player.x,
+      gameScene.player.y,
+      gameScene.cameras.main,
+    );
   }
 
   private showOverlay(title: string): void {
