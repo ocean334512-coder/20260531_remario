@@ -10,9 +10,11 @@ import { FlagPole } from '../entities/FlagPole';
 import { handlePlayerEnemyCollision } from '../systems/CollisionHandler';
 import { AudioManager, getAudio } from '../systems/AudioManager';
 import { TouchControls } from '../systems/TouchControls';
+import { clampProgressM, pixelsToMeters } from '../utils/distance';
 
 export class GameScene extends Phaser.Scene {
   player!: Player;
+  stageTotalM = 0;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private walkers!: Phaser.Physics.Arcade.Group;
   private throwers!: Phaser.Physics.Arcade.Group;
@@ -28,6 +30,7 @@ export class GameScene extends Phaser.Scene {
   private isGameOver = false;
   private isStageClear = false;
   private touchControls!: TouchControls;
+  private maxProgressM = 0;
 
   constructor() {
     super('GameScene');
@@ -52,6 +55,8 @@ export class GameScene extends Phaser.Scene {
     this.spawnY = spawnY;
     this.worldWidth = width * TILE_SIZE;
     this.worldHeight = height * TILE_SIZE;
+    this.stageTotalM = pixelsToMeters(flagX - spawnX);
+    this.maxProgressM = 0;
 
     this.physics.world.setBounds(0, 0, this.worldWidth, this.worldHeight + 200);
     this.cameras.main.setBounds(0, 0, this.worldWidth, this.worldHeight + 200);
@@ -172,11 +177,21 @@ export class GameScene extends Phaser.Scene {
       this.player.updateMovement();
     }
 
+    if (!this.isStageClear) {
+      const progressM = this.getProgressMeters();
+      this.maxProgressM = Math.max(this.maxProgressM, progressM);
+      this.events.emit('progress-changed', progressM, this.stageTotalM);
+    }
+
     if (!this.isStageClear && this.player.y > this.worldHeight + 64) {
       this.damagePlayer(true);
     }
 
     this.cleanupFallenEnemies();
+  }
+
+  getProgressMeters(playerX = this.player.x): number {
+    return clampProgressM(pixelsToMeters(playerX - this.spawnX), this.stageTotalM);
   }
 
   private cleanupFallenEnemies(): void {
@@ -275,14 +290,21 @@ export class GameScene extends Phaser.Scene {
     this.player.isDead = true;
     this.player.setVelocity(0, 0);
     getAudio(this)?.playGameOver();
-    this.events.emit('game-over');
+    this.events.emit('game-over', {
+      progressM: this.maxProgressM,
+      totalM: this.stageTotalM,
+    });
   }
 
   private finishStageClear(): void {
     if (this.isStageClear) return;
     this.isStageClear = true;
     this.player.setVelocity(0, 0);
-    this.events.emit('stage-clear');
+    this.maxProgressM = this.stageTotalM;
+    this.events.emit('stage-clear', {
+      progressM: this.stageTotalM,
+      totalM: this.stageTotalM,
+    });
   }
 
   private restartGame(): void {
