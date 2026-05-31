@@ -1,5 +1,6 @@
+import { getApiBaseForDisplay } from '../config/apiConfig';
 import { getPlayerName } from './playerSession';
-import { fetchLeaderboard, submitScore, type LeaderboardEntry } from './leaderboardApi';
+import { fetchLeaderboardWithRetry, submitScore, type LeaderboardEntry } from './leaderboardApi';
 
 export function renderLeaderboard(
   entries: LeaderboardEntry[],
@@ -37,20 +38,27 @@ export async function saveAndLoadLeaderboard(distanceM: number): Promise<void> {
   const panel = document.getElementById('leaderboard-panel');
   const status = document.getElementById('leaderboard-status');
   if (panel) panel.hidden = false;
-  if (status) status.textContent = '기록 저장 중…';
+  if (status) status.textContent = '기록 저장 중… (첫 요청은 30초 걸릴 수 있음)';
 
   const username = getPlayerName();
   try {
     await submitScore(username, distanceM);
   } catch {
-    if (status) status.textContent = '기록 저장 실패 (오프라인일 수 있음)';
+    if (status) status.textContent = '기록 저장 실패 — 서버 기동 중일 수 있습니다…';
   }
 
+  if (status) status.textContent = '순위표 불러오는 중…';
+
   try {
-    const entries = await fetchLeaderboard(10);
+    const entries = await fetchLeaderboardWithRetry(10);
     renderLeaderboard(entries, username);
   } catch {
-    if (status) status.textContent = '순위표를 불러오지 못했습니다.';
+    const hint = import.meta.env.DEV
+      ? '터미널에서 npm run dev:api 실행 후 다시 시도'
+      : '잠시 후 재시작하거나 새로고침';
+    if (status) {
+      status.textContent = `순위표를 불러오지 못했습니다. (${hint}) API: ${getApiBaseForDisplay()}`;
+    }
   }
 }
 
