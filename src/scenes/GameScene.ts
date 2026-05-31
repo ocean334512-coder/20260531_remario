@@ -276,6 +276,12 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    this.events.emit('player-died', {
+      progressM: this.maxProgressM,
+      totalM: this.stageTotalM,
+      final: false,
+    });
+
     this.projectiles.clear(true, true);
     this.player.respawn(this.spawnX, this.spawnY - 64);
     this.player.blinkInvincible();
@@ -290,9 +296,10 @@ export class GameScene extends Phaser.Scene {
     this.player.isDead = true;
     this.player.setVelocity(0, 0);
     getAudio(this)?.playGameOver();
-    this.events.emit('game-over', {
+    this.events.emit('player-died', {
       progressM: this.maxProgressM,
       totalM: this.stageTotalM,
+      final: true,
     });
   }
 

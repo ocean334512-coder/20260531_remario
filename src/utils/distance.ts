@@ -15,5 +15,9 @@ export function formatDistanceHud(progressM: number, totalM: number): string {
 
 export function formatGameOverMessage(progressM: number, totalM: number): string {
   const pct = totalM > 0 ? Math.round((progressM / totalM) * 100) : 0;
-  return `${progressM}m까지 진행!\n(전체 ${totalM}m · ${pct}%)`;
+  return `전체 ${totalM}m 중 ${pct}%`;
+}
+
+export function formatDeathPopupSub(final: boolean, totalM: number): string {
+  return final ? `GAME OVER · 총 ${totalM}m` : '까지 진행했습니다';
 }

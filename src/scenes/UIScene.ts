@@ -5,11 +5,12 @@ import { Minimap } from '../systems/Minimap';
 import { Fireworks } from '../systems/Fireworks';
 import {
   formatDistanceHud,
+  formatDeathPopupSub,
   formatGameOverMessage,
 } from '../utils/distance';
 import { GameScene } from './GameScene';
 
-type ProgressPayload = { progressM: number; totalM: number };
+type ProgressPayload = { progressM: number; totalM: number; final?: boolean };
 
 export class UIScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
@@ -23,6 +24,11 @@ export class UIScene extends Phaser.Scene {
   private minimap!: Minimap;
   private fireworks!: Fireworks;
   private stageTotalM = 0;
+  private deathPanel!: Phaser.GameObjects.Rectangle;
+  private deathMeterText!: Phaser.GameObjects.Text;
+  private deathSubText!: Phaser.GameObjects.Text;
+  private deathHideTimer?: Phaser.Time.TimerEvent;
+  private overlayBelowDeathPopup = false;
 
   constructor() {
     super('UIScene');
@@ -66,8 +72,8 @@ export class UIScene extends Phaser.Scene {
     this.distanceText.setScrollFactor(0);
 
     const help = isTouchDevice()
-      ? '하단 ◀▶ 이동 | 우측 JUMP · v19'
-      : '← → 이동 | Space 점프 | R 재시작 · v19';
+      ? '하단 ◀▶ 이동 | 우측 JUMP · v20'
+      : '← → 이동 | Space 점프 | R 재시작 · v20';
 
     this.helpText = this.add.text(w / 2, 38, help, {
       fontFamily: 'monospace',
@@ -129,6 +135,41 @@ export class UIScene extends Phaser.Scene {
       this.scene.get('GameScene').events.emit('request-restart');
     });
 
+    const panelW = isTouchDevice() ? 260 : 300;
+    const panelH = isTouchDevice() ? 110 : 120;
+    this.deathPanel = this.add
+      .rectangle(w / 2, h / 2 - 20, panelW, panelH, 0x111111, 0.92)
+      .setScrollFactor(0)
+      .setDepth(3200)
+      .setStrokeStyle(3, 0xffeb3b, 1)
+      .setVisible(false);
+
+    this.deathMeterText = this.add
+      .text(w / 2, h / 2 - 36, '', {
+        fontFamily: 'monospace',
+        fontSize: isTouchDevice() ? '48px' : '52px',
+        color: '#ffeb3b',
+        stroke: '#000000',
+        strokeThickness: 5,
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(3201)
+      .setVisible(false);
+
+    this.deathSubText = this.add
+      .text(w / 2, h / 2 + 8, '', {
+        fontFamily: 'monospace',
+        fontSize: isTouchDevice() ? '16px' : '18px',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 3,
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(3201)
+      .setVisible(false);
+
     gameScene.events.on('score-changed', (nextScore: number) => {
       this.scoreText.setText(`SCORE ${nextScore}`);
     });
@@ -138,9 +179,13 @@ export class UIScene extends Phaser.Scene {
     gameScene.events.on('progress-changed', (progressM: number, totalM: number) => {
       this.distanceText.setText(formatDistanceHud(progressM, totalM));
     });
-    gameScene.events.on('game-over', (payload: ProgressPayload) => {
-      this.fireworks.stop();
-      this.showOverlay('GAME OVER', formatGameOverMessage(payload.progressM, payload.totalM));
+    gameScene.events.on('player-died', (payload: ProgressPayload) => {
+      const final = payload.final === true;
+      if (final) this.fireworks.stop();
+      this.showDeathPopup(payload.progressM, payload.totalM, final);
+      if (final) {
+        this.showOverlay('', formatGameOverMessage(payload.progressM, payload.totalM), true);
+      }
     });
     gameScene.events.on('stage-clear', (payload: ProgressPayload) => {
       this.distanceText.setText(formatDistanceHud(payload.progressM, payload.totalM));
@@ -156,6 +201,7 @@ export class UIScene extends Phaser.Scene {
       this.livesText.setText('LIVES 3');
       this.distanceText.setText(formatDistanceHud(0, this.stageTotalM));
       this.fireworks.stop();
+      this.hideDeathPopup();
       this.hideOverlay();
     });
 
@@ -191,16 +237,71 @@ export class UIScene extends Phaser.Scene {
     this.livesText.setX(w - 16);
     this.distanceText.setX(w / 2);
     this.helpText.setX(w / 2);
-    this.overlayText.setPosition(w / 2, h / 2 - 48);
-    this.overlaySubText.setPosition(w / 2, h / 2 + 4);
-    this.restartHintText.setPosition(w / 2, h / 2 + 72);
+    this.layoutDeathPopup();
+    this.layoutOverlay(this.overlayBelowDeathPopup);
     this.restartTapZone.setPosition(w / 2, h / 2);
     this.restartTapZone.setSize(w, h);
   };
 
-  private showOverlay(title: string, subtitle?: string): void {
+  private layoutDeathPopup(): void {
+    const w = this.scale.width;
+    const h = this.scale.height;
+    const panelW = isTouchDevice() ? 260 : 300;
+    const panelH = isTouchDevice() ? 110 : 120;
+    this.deathPanel.setPosition(w / 2, h / 2 - 20);
+    this.deathPanel.setSize(panelW, panelH);
+    this.deathMeterText.setPosition(w / 2, h / 2 - 36);
+    this.deathSubText.setPosition(w / 2, h / 2 + 8);
+  }
+
+  private layoutOverlay(belowDeathPopup: boolean): void {
+    const w = this.scale.width;
+    const h = this.scale.height;
+    if (belowDeathPopup) {
+      this.overlayText.setPosition(w / 2, h / 2 + 88);
+      this.overlaySubText.setPosition(w / 2, h / 2 + 128);
+      this.restartHintText.setPosition(w / 2, h / 2 + 168);
+    } else {
+      this.overlayText.setPosition(w / 2, h / 2 - 48);
+      this.overlaySubText.setPosition(w / 2, h / 2 + 4);
+      this.restartHintText.setPosition(w / 2, h / 2 + 72);
+    }
+  };
+
+  private showDeathPopup(progressM: number, totalM: number, final: boolean): void {
+    this.deathHideTimer?.remove();
+    this.deathHideTimer = undefined;
+
+    this.deathMeterText.setText(`${progressM}m`);
+    this.deathSubText.setText(formatDeathPopupSub(final, totalM));
+    this.deathPanel.setVisible(true);
+    this.deathMeterText.setVisible(true);
+    this.deathSubText.setVisible(true);
+    this.deathPanel.setAlpha(1);
+    this.deathMeterText.setAlpha(1);
+    this.deathSubText.setAlpha(1);
+
+    if (!final) {
+      this.deathHideTimer = this.time.addEvent({
+        delay: 2200,
+        callback: () => this.hideDeathPopup(),
+      });
+    }
+  }
+
+  private hideDeathPopup(): void {
+    this.deathHideTimer?.remove();
+    this.deathHideTimer = undefined;
+    this.deathPanel.setVisible(false);
+    this.deathMeterText.setVisible(false);
+    this.deathSubText.setVisible(false);
+  }
+
+  private showOverlay(title: string, subtitle?: string, belowDeathPopup = false): void {
+    this.overlayBelowDeathPopup = belowDeathPopup;
+    this.layoutOverlay(belowDeathPopup);
     this.overlayText.setText(title);
-    this.overlayText.setVisible(true);
+    this.overlayText.setVisible(title.length > 0);
 
     if (subtitle) {
       this.overlaySubText.setText(subtitle);
@@ -216,6 +317,8 @@ export class UIScene extends Phaser.Scene {
   }
 
   private hideOverlay(): void {
+    this.overlayBelowDeathPopup = false;
+    this.hideDeathPopup();
     this.overlayText.setVisible(false);
     this.overlaySubText.setVisible(false);
     this.restartHintText.setVisible(false);
