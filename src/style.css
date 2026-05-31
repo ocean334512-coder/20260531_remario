@@ -52,8 +52,41 @@ canvas {
   display: none;
 }
 
-.name-entry__panel {
+.name-entry__wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
   width: min(360px, 100%);
+}
+
+.name-entry__studio {
+  font-family: monospace;
+  font-size: clamp(22px, 6vw, 32px);
+  font-weight: bold;
+  letter-spacing: 0.18em;
+  color: #ffffff;
+  text-shadow:
+    0 0 12px rgba(255, 235, 59, 0.65),
+    0 2px 0 #ffeb3b,
+    0 4px 8px rgba(0, 0, 0, 0.5);
+  animation: studio-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes studio-glow {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.92;
+    transform: scale(1.02);
+  }
+}
+
+.name-entry__panel {
+  width: 100%;
   padding: 28px 24px;
   border-radius: 16px;
   background: linear-gradient(180deg, #2d2d5a 0%, #1a1a3e 100%);
