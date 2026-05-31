@@ -22,48 +22,6 @@ export class TouchControls {
 
     // 두 손가락 이상 (이동 + 점프 동시)
     scene.input.addPointer(2);
-    this.drawZoneHints();
-  }
-
-  private drawZoneHints(): void {
-    const depth = 1998;
-    const alpha = 0.12;
-    const w = this.scene.scale.width;
-    const h = this.scene.scale.height;
-
-    const leftHint = this.scene.add.rectangle(w * 0.22, h * 0.58, w * 0.4, h * 0.72, 0xffffff, alpha);
-    leftHint.setScrollFactor(0).setDepth(depth);
-
-    const rightHint = this.scene.add.rectangle(w * 0.5, h * 0.58, w * 0.28, h * 0.72, 0xffffff, alpha);
-    rightHint.setScrollFactor(0).setDepth(depth);
-
-    const jumpHint = this.scene.add.rectangle(w * 0.82, h * 0.82, w * 0.3, h * 0.28, 0xffcc00, alpha + 0.08);
-    jumpHint.setScrollFactor(0).setDepth(depth);
-
-    this.scene.add
-      .text(w * 0.22, h * 0.58, '◀', { fontSize: '32px', color: '#ffffff' })
-      .setOrigin(0.5)
-      .setAlpha(0.35)
-      .setScrollFactor(0)
-      .setDepth(depth + 1);
-
-    this.scene.add
-      .text(w * 0.5, h * 0.58, '▶', { fontSize: '32px', color: '#ffffff' })
-      .setOrigin(0.5)
-      .setAlpha(0.35)
-      .setScrollFactor(0)
-      .setDepth(depth + 1);
-
-    this.scene.add
-      .text(w * 0.82, h * 0.82, 'JUMP', {
-        fontSize: '13px',
-        fontFamily: 'monospace',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5)
-      .setAlpha(0.5)
-      .setScrollFactor(0)
-      .setDepth(depth + 1);
   }
 
   private readPointers(): void {

@@ -39,8 +39,8 @@ export class UIScene extends Phaser.Scene {
     this.livesText.setScrollFactor(0);
 
     const help = isTouchDevice()
-      ? '왼쪽·가운데=이동 | 오른쪽 아래=점프 · v15'
-      : '← → 이동 | Space 점프 | R 재시작 · v15';
+      ? '왼쪽·가운데=이동 | 오른쪽 아래=점프 · v16'
+      : '← → 이동 | Space 점프 | R 재시작 · v16';
 
     this.helpText = this.add.text(w / 2, 40, help, {
       fontFamily: 'monospace',
