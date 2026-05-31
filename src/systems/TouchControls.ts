@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { GAME_HEIGHT, GAME_WIDTH } from '../config/gameConfig';
+import { isTouchDevice } from '../config/gameConfig';
 
+/** 모바일: 화면 구역 터치 + 멀티터치 (이동+점프 동시) */
 export class TouchControls {
   leftDown = false;
   rightDown = false;
@@ -10,88 +11,95 @@ export class TouchControls {
 
   private jumpWasDown = false;
   private readonly enabled: boolean;
+  private readonly scene: Phaser.Scene;
 
-  static isTouchDevice(): boolean {
-    return (
-      'ontouchstart' in window ||
-      navigator.maxTouchPoints > 0 ||
-      window.innerWidth < 900
-    );
-  }
+  static isTouchDevice = isTouchDevice;
 
   constructor(scene: Phaser.Scene) {
-    this.enabled = TouchControls.isTouchDevice();
+    this.scene = scene;
+    this.enabled = isTouchDevice();
     if (!this.enabled) return;
 
-    const depth = 2000;
-    const alpha = 0.35;
+    // 두 손가락 이상 (이동 + 점프 동시)
+    scene.input.addPointer(2);
+    this.drawZoneHints();
+  }
 
-    const leftBtn = scene.add.circle(72, GAME_HEIGHT - 72, 44, 0xffffff, alpha);
-    leftBtn.setScrollFactor(0).setDepth(depth).setInteractive();
-    leftBtn.on('pointerdown', () => {
-      this.leftDown = true;
-    });
-    leftBtn.on('pointerup', () => {
-      this.leftDown = false;
-    });
-    leftBtn.on('pointerout', () => {
-      this.leftDown = false;
-    });
-    scene.add
-      .text(72, GAME_HEIGHT - 72, '◀', {
-        fontSize: '28px',
-        color: '#ffffff',
-      })
+  private drawZoneHints(): void {
+    const depth = 1998;
+    const alpha = 0.12;
+    const w = this.scene.scale.width;
+    const h = this.scene.scale.height;
+
+    const leftHint = this.scene.add.rectangle(w * 0.22, h * 0.58, w * 0.4, h * 0.72, 0xffffff, alpha);
+    leftHint.setScrollFactor(0).setDepth(depth);
+
+    const rightHint = this.scene.add.rectangle(w * 0.5, h * 0.58, w * 0.28, h * 0.72, 0xffffff, alpha);
+    rightHint.setScrollFactor(0).setDepth(depth);
+
+    const jumpHint = this.scene.add.rectangle(w * 0.82, h * 0.82, w * 0.3, h * 0.28, 0xffcc00, alpha + 0.08);
+    jumpHint.setScrollFactor(0).setDepth(depth);
+
+    this.scene.add
+      .text(w * 0.22, h * 0.58, '◀', { fontSize: '32px', color: '#ffffff' })
       .setOrigin(0.5)
+      .setAlpha(0.35)
       .setScrollFactor(0)
       .setDepth(depth + 1);
 
-    const rightBtn = scene.add.circle(168, GAME_HEIGHT - 72, 44, 0xffffff, alpha);
-    rightBtn.setScrollFactor(0).setDepth(depth).setInteractive();
-    rightBtn.on('pointerdown', () => {
-      this.rightDown = true;
-    });
-    rightBtn.on('pointerup', () => {
-      this.rightDown = false;
-    });
-    rightBtn.on('pointerout', () => {
-      this.rightDown = false;
-    });
-    scene.add
-      .text(168, GAME_HEIGHT - 72, '▶', {
-        fontSize: '28px',
-        color: '#ffffff',
-      })
+    this.scene.add
+      .text(w * 0.5, h * 0.58, '▶', { fontSize: '32px', color: '#ffffff' })
       .setOrigin(0.5)
+      .setAlpha(0.35)
       .setScrollFactor(0)
       .setDepth(depth + 1);
 
-    const jumpBtn = scene.add.circle(GAME_WIDTH - 72, GAME_HEIGHT - 72, 52, 0xffcc00, 0.45);
-    jumpBtn.setScrollFactor(0).setDepth(depth).setInteractive();
-    jumpBtn.on('pointerdown', () => {
-      this.jumpDown = true;
-    });
-    jumpBtn.on('pointerup', () => {
-      this.jumpDown = false;
-    });
-    jumpBtn.on('pointerout', () => {
-      this.jumpDown = false;
-    });
-    scene.add
-      .text(GAME_WIDTH - 72, GAME_HEIGHT - 72, 'JUMP', {
-        fontSize: '14px',
+    this.scene.add
+      .text(w * 0.82, h * 0.82, 'JUMP', {
+        fontSize: '13px',
         fontFamily: 'monospace',
         color: '#ffffff',
-        stroke: '#000000',
-        strokeThickness: 2,
       })
       .setOrigin(0.5)
+      .setAlpha(0.5)
       .setScrollFactor(0)
       .setDepth(depth + 1);
+  }
+
+  private readPointers(): void {
+    this.leftDown = false;
+    this.rightDown = false;
+    this.jumpDown = false;
+
+    const w = this.scene.scale.width;
+    const h = this.scene.scale.height;
+    const hudBottom = h * 0.1;
+
+    for (const pointer of this.scene.input.manager.pointers) {
+      if (!pointer.isDown) continue;
+
+      const x = pointer.x;
+      const y = pointer.y;
+      if (y < hudBottom) continue;
+
+      const inJumpZone = y >= h * 0.68 && x >= w * 0.52;
+
+      if (inJumpZone) {
+        this.jumpDown = true;
+        continue;
+      }
+
+      if (x < w * 0.48) {
+        this.leftDown = true;
+      } else if (x > w * 0.52) {
+        this.rightDown = true;
+      }
+    }
   }
 
   preUpdate(): void {
     if (!this.enabled) return;
+    this.readPointers();
     this.jumpJustDown = this.jumpDown && !this.jumpWasDown;
     this.jumpJustUp = !this.jumpDown && this.jumpWasDown;
     this.jumpWasDown = this.jumpDown;

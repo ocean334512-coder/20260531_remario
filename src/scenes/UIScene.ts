@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { GAME_WIDTH } from '../config/gameConfig';
+import { isTouchDevice } from '../config/gameConfig';
 
 export class UIScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
@@ -12,6 +12,8 @@ export class UIScene extends Phaser.Scene {
   }
 
   create(): void {
+    const w = this.scale.width;
+    const h = this.scale.height;
     const score = this.registry.get('score') as number;
     const lives = this.registry.get('lives') as number;
 
@@ -24,7 +26,7 @@ export class UIScene extends Phaser.Scene {
     });
     this.scoreText.setScrollFactor(0);
 
-    this.livesText = this.add.text(GAME_WIDTH - 16, 12, `LIVES ${lives}`, {
+    this.livesText = this.add.text(w - 16, 12, `LIVES ${lives}`, {
       fontFamily: 'monospace',
       fontSize: '20px',
       color: '#ffffff',
@@ -34,13 +36,13 @@ export class UIScene extends Phaser.Scene {
     this.livesText.setOrigin(1, 0);
     this.livesText.setScrollFactor(0);
 
-    this.helpText = this.add.text(
-      GAME_WIDTH / 2,
-      40,
-      '← → / ◀▶ 이동 | Space/JUMP | 후반=강적 · v13',
-      {
+    const help = isTouchDevice()
+      ? '왼쪽·가운데 터치=이동 | 오른쪽 아래=점프 (동시 가능) · v14'
+      : '← → 이동 | Space 점프 | R 재시작 · v14';
+
+    this.helpText = this.add.text(w / 2, 40, help, {
       fontFamily: 'monospace',
-      fontSize: '14px',
+      fontSize: isTouchDevice() ? '12px' : '14px',
       color: '#ffffff',
       stroke: '#000000',
       strokeThickness: 2,
@@ -48,7 +50,7 @@ export class UIScene extends Phaser.Scene {
     this.helpText.setOrigin(0.5, 0);
     this.helpText.setScrollFactor(0);
 
-    this.overlayText = this.add.text(GAME_WIDTH / 2, 270, '', {
+    this.overlayText = this.add.text(w / 2, h / 2, '', {
       fontFamily: 'monospace',
       fontSize: '36px',
       color: '#ffffff',
