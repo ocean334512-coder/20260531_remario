@@ -5,7 +5,9 @@ export class UIScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
   private livesText!: Phaser.GameObjects.Text;
   private overlayText!: Phaser.GameObjects.Text;
+  private restartHintText!: Phaser.GameObjects.Text;
   private helpText!: Phaser.GameObjects.Text;
+  private restartTapZone!: Phaser.GameObjects.Rectangle;
 
   constructor() {
     super('UIScene');
@@ -37,8 +39,8 @@ export class UIScene extends Phaser.Scene {
     this.livesText.setScrollFactor(0);
 
     const help = isTouchDevice()
-      ? '왼쪽·가운데 터치=이동 | 오른쪽 아래=점프 (동시 가능) · v14'
-      : '← → 이동 | Space 점프 | R 재시작 · v14';
+      ? '왼쪽·가운데=이동 | 오른쪽 아래=점프 · v15'
+      : '← → 이동 | Space 점프 | R 재시작 · v15';
 
     this.helpText = this.add.text(w / 2, 40, help, {
       fontFamily: 'monospace',
@@ -50,7 +52,7 @@ export class UIScene extends Phaser.Scene {
     this.helpText.setOrigin(0.5, 0);
     this.helpText.setScrollFactor(0);
 
-    this.overlayText = this.add.text(w / 2, h / 2, '', {
+    this.overlayText = this.add.text(w / 2, h / 2 - 24, '', {
       fontFamily: 'monospace',
       fontSize: '36px',
       color: '#ffffff',
@@ -62,6 +64,29 @@ export class UIScene extends Phaser.Scene {
     this.overlayText.setScrollFactor(0);
     this.overlayText.setVisible(false);
 
+    this.restartHintText = this.add.text(w / 2, h / 2 + 56, '', {
+      fontFamily: 'monospace',
+      fontSize: isTouchDevice() ? '22px' : '18px',
+      color: '#ffeb3b',
+      stroke: '#000000',
+      strokeThickness: 3,
+      align: 'center',
+    });
+    this.restartHintText.setOrigin(0.5);
+    this.restartHintText.setScrollFactor(0);
+    this.restartHintText.setVisible(false);
+
+    this.restartTapZone = this.add
+      .rectangle(w / 2, h / 2, w, h, 0x000000, 0.45)
+      .setScrollFactor(0)
+      .setDepth(3000)
+      .setInteractive({ useHandCursor: false })
+      .setVisible(false);
+
+    this.restartTapZone.on('pointerdown', () => {
+      this.scene.get('GameScene').events.emit('request-restart');
+    });
+
     const gameScene = this.scene.get('GameScene');
     gameScene.events.on('score-changed', (score: number) => {
       this.scoreText.setText(`SCORE ${score}`);
@@ -70,21 +95,32 @@ export class UIScene extends Phaser.Scene {
       this.livesText.setText(`LIVES ${lives}`);
     });
     gameScene.events.on('game-over', () => {
-      this.showOverlay('GAME OVER\nR 키로 재시작');
+      this.showOverlay('GAME OVER');
     });
     gameScene.events.on('stage-clear', () => {
-      this.showOverlay('STAGE CLEAR!\nR 키로 재시작');
+      this.showOverlay('STAGE CLEAR!');
     });
 
     this.events.on('reset-ui', () => {
       this.scoreText.setText('SCORE 0');
       this.livesText.setText('LIVES 3');
-      this.overlayText.setVisible(false);
+      this.hideOverlay();
     });
   }
 
-  private showOverlay(message: string): void {
-    this.overlayText.setText(message);
+  private showOverlay(title: string): void {
+    this.overlayText.setText(title);
     this.overlayText.setVisible(true);
+
+    const hint = isTouchDevice() ? '화면을 탭하여 재시작' : 'R 키로 재시작';
+    this.restartHintText.setText(hint);
+    this.restartHintText.setVisible(true);
+    this.restartTapZone.setVisible(true);
+  }
+
+  private hideOverlay(): void {
+    this.overlayText.setVisible(false);
+    this.restartHintText.setVisible(false);
+    this.restartTapZone.setVisible(false);
   }
 }

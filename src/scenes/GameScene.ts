@@ -142,6 +142,12 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
+    this.events.on('request-restart', () => {
+      if (this.isGameOver || this.isStageClear) {
+        this.restartGame();
+      }
+    });
+
     this.events.on(Phaser.Scenes.Events.PRE_UPDATE, (_time: number, delta: number) => {
       this.touchControls.preUpdate();
       if (this.isGameOver || this.isStageClear) return;
