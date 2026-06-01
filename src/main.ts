@@ -16,13 +16,6 @@ async function bootstrap(): Promise<void> {
   window.addEventListener('orientationchange', () => {
     window.setTimeout(onLayoutChange, 150);
   });
-
-  if (screen.orientation?.lock) {
-    const tryLockPortrait = (): void => {
-      screen.orientation.lock('portrait-primary').catch(() => undefined);
-    };
-    document.body.addEventListener('touchstart', tryLockPortrait, { once: true });
-  }
 }
 
 bootstrap();

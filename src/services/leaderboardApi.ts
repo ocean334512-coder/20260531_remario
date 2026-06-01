@@ -1,4 +1,5 @@
 import { apiUrl } from '../config/apiConfig';
+import { cachePlayerScore, LEADERBOARD_SIZE, mergeLeaderboardEntries } from './leaderboardStore';
 
 export type LeaderboardEntry = {
   rank: number;
@@ -12,6 +13,8 @@ const sleep = (ms: number): Promise<void> =>
   });
 
 export async function submitScore(username: string, distanceM: number): Promise<void> {
+  cachePlayerScore(username, distanceM);
+
   const res = await fetch(apiUrl('/api/scores'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -22,17 +25,21 @@ export async function submitScore(username: string, distanceM: number): Promise<
   }
 }
 
-export async function fetchLeaderboard(limit = 10): Promise<LeaderboardEntry[]> {
+export async function fetchLeaderboard(limit = LEADERBOARD_SIZE): Promise<LeaderboardEntry[]> {
   const res = await fetch(apiUrl(`/api/scores/leaderboard?limit=${limit}`));
   if (!res.ok) {
     throw new Error(`leaderboard failed: ${res.status}`);
   }
   const data = (await res.json()) as { items: LeaderboardEntry[] };
-  return data.items ?? [];
+  const serverItems = data.items ?? [];
+  return mergeLeaderboardEntries(serverItems, limit);
 }
 
 /** Render 무료 플랜 슬립 대비 재시도 */
-export async function fetchLeaderboardWithRetry(limit = 10, attempts = 3): Promise<LeaderboardEntry[]> {
+export async function fetchLeaderboardWithRetry(
+  limit = LEADERBOARD_SIZE,
+  attempts = 3,
+): Promise<LeaderboardEntry[]> {
   let lastError: unknown;
   for (let i = 0; i < attempts; i += 1) {
     try {
@@ -43,4 +50,9 @@ export async function fetchLeaderboardWithRetry(limit = 10, attempts = 3): Promi
     }
   }
   throw lastError;
+}
+
+/** API 실패 시 로컬 캐시만으로 순위표 구성 */
+export function fetchLeaderboardFromCache(limit = LEADERBOARD_SIZE): LeaderboardEntry[] {
+  return mergeLeaderboardEntries([], limit);
 }

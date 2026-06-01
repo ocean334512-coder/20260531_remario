@@ -10,6 +10,7 @@ export function isTouchDevice(): boolean {
   return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 }
 
+/** 터치 기기: 세로 540×960 / 가로 960×540 (데스크톱은 항상 가로 비율) */
 export function prefersPortraitLayout(): boolean {
   return isTouchDevice() && window.innerHeight > window.innerWidth;
 }

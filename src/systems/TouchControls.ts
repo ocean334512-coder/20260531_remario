@@ -1,7 +1,6 @@
 import Phaser from 'phaser';
 import { isTouchDevice } from '../config/gameConfig';
-
-type TouchButton = { cx: number; cy: number; r: number };
+import { computeTouchLayout, type TouchButton } from './touchLayout';
 
 /** 모바일: 하단 대형 버튼 + 멀티터치 (이동+점프 동시) */
 export class TouchControls {
@@ -17,6 +16,7 @@ export class TouchControls {
   private leftBtn!: TouchButton;
   private rightBtn!: TouchButton;
   private jumpBtn!: TouchButton;
+  private visuals: Phaser.GameObjects.GameObject[] = [];
 
   static isTouchDevice = isTouchDevice;
 
@@ -26,41 +26,54 @@ export class TouchControls {
     if (!this.enabled) return;
 
     scene.input.addPointer(2);
-    this.layoutButtons();
-    this.drawButtons();
+    this.rebuild();
+
+    scene.scale.on('resize', this.rebuild, this);
+    scene.events.once('shutdown', () => {
+      scene.scale.off('resize', this.rebuild, this);
+      this.destroyVisuals();
+    });
   }
 
-  private layoutButtons(): void {
-    const w = this.scene.scale.width;
-    const h = this.scene.scale.height;
-    const portrait = h > w;
-    const r = portrait ? Math.min(w * 0.14, 72) : Math.min(h * 0.16, 64);
-    const jumpR = r * 1.12;
-    const cy = h - r - (portrait ? 28 : 20);
+  private rebuild = (): void => {
+    if (!this.enabled) return;
+    this.destroyVisuals();
+    const layout = computeTouchLayout(this.scene.scale.width, this.scene.scale.height);
+    this.leftBtn = layout.leftBtn;
+    this.rightBtn = layout.rightBtn;
+    this.jumpBtn = layout.jumpBtn;
+    this.drawButtons();
+  };
 
-    this.leftBtn = { cx: w * 0.17, cy, r };
-    this.rightBtn = { cx: w * 0.39, cy, r };
-    this.jumpBtn = { cx: w - jumpR - (portrait ? 24 : 32), cy, r: jumpR };
+  private destroyVisuals(): void {
+    for (const obj of this.visuals) obj.destroy();
+    this.visuals = [];
   }
 
   private drawButtons(): void {
     const depth = 2000;
     const { leftBtn, rightBtn, jumpBtn } = this;
 
-    this.addButtonCircle(leftBtn, 0xffffff, 0.28, depth);
-    this.addButtonLabel(leftBtn.cx, leftBtn.cy, '◀', '40px', depth + 1);
+    this.track(this.addButtonCircle(leftBtn, 0xffffff, 0.28, depth));
+    this.track(this.addButtonLabel(leftBtn.cx, leftBtn.cy, '◀', '36px', depth + 1));
 
-    this.addButtonCircle(rightBtn, 0xffffff, 0.28, depth);
-    this.addButtonLabel(rightBtn.cx, rightBtn.cy, '▶', '40px', depth + 1);
+    this.track(this.addButtonCircle(rightBtn, 0xffffff, 0.28, depth));
+    this.track(this.addButtonLabel(rightBtn.cx, rightBtn.cy, '▶', '36px', depth + 1));
 
-    this.addButtonCircle(jumpBtn, 0xffcc00, 0.42, depth);
-    this.addButtonLabel(jumpBtn.cx, jumpBtn.cy, 'JUMP', '18px', depth + 1, true);
+    this.track(this.addButtonCircle(jumpBtn, 0xffcc00, 0.42, depth));
+    this.track(this.addButtonLabel(jumpBtn.cx, jumpBtn.cy, 'JUMP', '16px', depth + 1, true));
   }
 
-  private addButtonCircle(btn: TouchButton, color: number, alpha: number, depth: number): void {
+  private track<T extends Phaser.GameObjects.GameObject>(obj: T): T {
+    this.visuals.push(obj);
+    return obj;
+  }
+
+  private addButtonCircle(btn: TouchButton, color: number, alpha: number, depth: number): Phaser.GameObjects.Arc {
     const ring = this.scene.add.circle(btn.cx, btn.cy, btn.r, color, alpha);
     ring.setScrollFactor(0).setDepth(depth);
     ring.setStrokeStyle(3, 0x000000, 0.35);
+    return ring;
   }
 
   private addButtonLabel(
@@ -70,8 +83,8 @@ export class TouchControls {
     size: string,
     depth: number,
     bold = false,
-  ): void {
-    this.scene.add
+  ): Phaser.GameObjects.Text {
+    return this.scene.add
       .text(x, y, label, {
         fontSize: size,
         fontFamily: 'monospace',

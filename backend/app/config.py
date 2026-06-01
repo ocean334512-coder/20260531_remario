@@ -4,6 +4,7 @@ from pathlib import Path
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_DB = BACKEND_ROOT / "data" / "mario.db"
 
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 DATABASE_PATH = Path(os.getenv("DATABASE_PATH", str(DEFAULT_DB)))
 CORS_ORIGINS = os.getenv(
     "CORS_ORIGINS",

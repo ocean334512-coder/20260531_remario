@@ -152,6 +152,14 @@ canvas {
 }
 
 /* ── TOP 10 순위표 (게임 오버) ── */
+@media (orientation: landscape) and (max-height: 520px) {
+  .leaderboard-panel {
+    bottom: auto;
+    top: max(10px, env(safe-area-inset-top));
+    max-height: 38vh;
+  }
+}
+
 .leaderboard-panel {
   position: fixed;
   left: 50%;
@@ -197,6 +205,15 @@ canvas {
 .leaderboard-panel__item--me {
   color: #ffeb3b;
   font-weight: bold;
+}
+
+.leaderboard-panel__item--empty {
+  opacity: 0.4;
+  font-style: italic;
+}
+
+.leaderboard-panel__item--empty .score {
+  font-weight: normal;
 }
 
 .leaderboard-panel__item .rank {
