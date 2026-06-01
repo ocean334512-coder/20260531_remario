@@ -18,6 +18,7 @@ import {
 import { installNavigationGuard } from './services/navigationGuard';
 import { installPlayCountPersistence } from './services/playCountPersistence';
 import { restorePlayCountOnBoot } from './services/playCountService';
+import { teardownGameAudio } from './systems/AudioManager';
 import { waitForPlayerName } from './services/playerSession';
 import './style.css';
 
@@ -88,6 +89,7 @@ async function runOneGameSession(): Promise<void> {
   unbindLayout();
   releaseNavigationGuard();
   hideExitButton();
+  teardownGameAudio(game.registry);
   game.destroy(true);
 }
 

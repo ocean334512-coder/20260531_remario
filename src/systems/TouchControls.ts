@@ -1,4 +1,5 @@
 import { isPortraitViewport, isTouchDevice } from '../config/gameConfig';
+import { requestAudioUnlock } from '../services/gameAudio';
 
 /** 모바일: HTML 오버레이 버튼 (Phaser 입력·회전 이슈 회피) */
 export class TouchControls {
@@ -52,6 +53,7 @@ export class TouchControls {
 
     const onPointerDown = (e: PointerEvent): void => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
+      requestAudioUnlock();
       e.preventDefault();
       e.stopPropagation();
       activePointers.add(e.pointerId);
