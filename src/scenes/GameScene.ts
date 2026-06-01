@@ -9,7 +9,7 @@ import { HopperEnemy } from '../entities/HopperEnemy';
 import { FlagPole } from '../entities/FlagPole';
 import { handlePlayerEnemyCollision } from '../systems/CollisionHandler';
 import { AudioManager, getAudio } from '../systems/AudioManager';
-import { TouchControls } from '../systems/TouchControls';
+import type { TouchControls } from '../systems/TouchControls';
 import { clampProgressM, pixelsToMeters } from '../utils/distance';
 
 export class GameScene extends Phaser.Scene {
@@ -29,7 +29,7 @@ export class GameScene extends Phaser.Scene {
   private worldHeight = 0;
   private isGameOver = false;
   private isStageClear = false;
-  private touchControls!: TouchControls;
+  private touchControls: TouchControls | null = null;
   private maxProgressM = 0;
 
   constructor() {
@@ -85,8 +85,7 @@ export class GameScene extends Phaser.Scene {
     );
 
     this.player = new Player(this, spawnX, spawnY - 64);
-    this.touchControls = new TouchControls(this);
-    this.player.bindTouchControls(this.touchControls);
+    this.bindTouchControls();
 
     this.physics.add.collider(
       this.player,
@@ -154,7 +153,7 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.events.on(Phaser.Scenes.Events.PRE_UPDATE, (_time: number, delta: number) => {
-      this.touchControls.preUpdate();
+      this.touchControls?.preUpdate();
       if (this.isGameOver || this.isStageClear) return;
       this.player.handleJumpBeforePhysics(delta);
     });
@@ -319,5 +318,21 @@ export class GameScene extends Phaser.Scene {
     this.registry.set('lives', 3);
     this.scene.restart();
     this.scene.get('UIScene').events.emit('reset-ui');
+  }
+
+  private bindTouchControls(): void {
+    const fromRegistry = this.registry.get('touchControls') as TouchControls | undefined;
+    if (fromRegistry) {
+      this.touchControls = fromRegistry;
+      this.player.bindTouchControls(fromRegistry);
+      return;
+    }
+    this.time.delayedCall(0, () => {
+      const tc = this.registry.get('touchControls') as TouchControls | undefined;
+      if (tc) {
+        this.touchControls = tc;
+        this.player.bindTouchControls(tc);
+      }
+    });
   }
 }

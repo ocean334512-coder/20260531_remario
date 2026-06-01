@@ -10,6 +10,7 @@ import {
 } from '../utils/distance';
 import { GameScene } from './GameScene';
 import { hideLeaderboard, saveAndLoadLeaderboard } from '../services/leaderboardUi';
+import { TouchControls } from '../systems/TouchControls';
 
 type ProgressPayload = { progressM: number; totalM: number; final?: boolean };
 
@@ -30,12 +31,18 @@ export class UIScene extends Phaser.Scene {
   private deathSubText!: Phaser.GameObjects.Text;
   private deathHideTimer?: Phaser.Time.TimerEvent;
   private overlayBelowDeathPopup = false;
+  private touchControls: TouchControls | null = null;
 
   constructor() {
     super('UIScene');
   }
 
   create(): void {
+    if (isTouchDevice()) {
+      this.touchControls = new TouchControls(this);
+      this.registry.set('touchControls', this.touchControls);
+    }
+
     const w = this.scale.width;
     const h = this.scale.height;
     const score = this.registry.get('score') as number;
@@ -73,8 +80,8 @@ export class UIScene extends Phaser.Scene {
     this.distanceText.setScrollFactor(0);
 
     const help = isTouchDevice()
-      ? '◀▶ 이동 | JUMP · 세로·가로 지원 · v22'
-      : '← → 이동 | Space 점프 | R 재시작 · v22';
+      ? '◀▶ 이동 | JUMP · 세로·가로 · v23'
+      : '← → 이동 | Space 점프 | R 재시작 · v23';
 
     this.helpText = this.add.text(w / 2, 38, help, {
       fontFamily: 'monospace',
@@ -129,7 +136,6 @@ export class UIScene extends Phaser.Scene {
       .rectangle(w / 2, h / 2, w, h, 0x000000, 0.45)
       .setScrollFactor(0)
       .setDepth(3000)
-      .setInteractive({ useHandCursor: false })
       .setVisible(false);
 
     this.restartTapZone.on('pointerdown', () => {
@@ -317,6 +323,7 @@ export class UIScene extends Phaser.Scene {
     this.restartHintText.setText(hint);
     this.restartHintText.setVisible(true);
     this.restartTapZone.setVisible(true);
+    this.restartTapZone.setInteractive({ useHandCursor: false });
   }
 
   private hideOverlay(): void {
@@ -326,5 +333,6 @@ export class UIScene extends Phaser.Scene {
     this.overlaySubText.setVisible(false);
     this.restartHintText.setVisible(false);
     this.restartTapZone.setVisible(false);
+    this.restartTapZone.disableInteractive();
   }
 }

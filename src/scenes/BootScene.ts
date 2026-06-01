@@ -18,8 +18,8 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     this.registry.set('score', 0);
     this.registry.set('lives', 3);
-    this.scene.start('GameScene');
     this.scene.launch('UIScene');
+    this.scene.start('GameScene');
   }
 
   private makeCircleTexture(
