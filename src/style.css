@@ -490,10 +490,10 @@ html.is-mobile .touch-controls__btn--jump {
 
 .leaderboard-panel__item {
   display: grid;
-  grid-template-columns: 40px 1fr minmax(88px, auto);
-  gap: 6px 8px;
+  grid-template-columns: 44px 1fr auto;
+  gap: 6px 10px;
   align-items: center;
-  padding: 6px 4px;
+  padding: 8px 4px;
   font-family: monospace;
   font-size: 14px;
   color: #fff;
@@ -524,21 +524,11 @@ html.is-mobile .touch-controls__btn--jump {
   white-space: nowrap;
 }
 
-.leaderboard-panel__item .score-col {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-}
-
 .leaderboard-panel__item .score {
   font-weight: bold;
+  font-size: 15px;
   color: #ffeb3b;
-}
-
-.leaderboard-panel__item .detail {
-  font-size: 11px;
-  opacity: 0.85;
+  white-space: nowrap;
 }
 
 .leaderboard-panel__status {

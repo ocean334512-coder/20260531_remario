@@ -1,5 +1,5 @@
 import { getApiBaseForDisplay } from '../config/apiConfig';
-import { formatLeaderboardDetail, formatLeaderboardScore } from '../utils/finalScore';
+import { formatLeaderboardScore } from '../utils/finalScore';
 import { getPlayerName } from './playerSession';
 import { fetchLeaderboardFromCache, submitAndFetchLeaderboard } from './leaderboardApi';
 import {
@@ -29,7 +29,7 @@ export function renderLeaderboard(
   if (!hasRealEntries) {
     status.textContent = '아직 기록이 없습니다.';
   } else {
-    status.textContent = '합산: SCORE + 거리(m) + TIME보너스';
+    status.textContent = '합산 점수 순위';
   }
 
   entries.forEach((entry) => {
@@ -44,17 +44,24 @@ export function renderLeaderboard(
     if (entry.empty) {
       li.innerHTML = `<span class="rank">${entry.rank}위</span><span class="name">—</span><span class="score">—</span>`;
     } else {
-      li.innerHTML = `<span class="rank">${entry.rank}위</span><span class="name">${escapeHtml(entry.username)}</span><span class="score-col"><span class="score">${formatLeaderboardScore(entry)}</span><span class="detail">${formatLeaderboardDetail(entry)}</span></span>`;
+      li.innerHTML = `<span class="rank">${entry.rank}위</span><span class="name">${escapeHtml(entry.username)}</span><span class="score">${formatLeaderboardScore(entry)}</span>`;
     }
     list.appendChild(li);
   });
 
   panel.hidden = false;
+
+  const touchRoot = document.getElementById('touch-controls');
+  if (touchRoot) touchRoot.hidden = true;
 }
 
 export function hideLeaderboard(): void {
   const panel = document.getElementById('leaderboard-panel');
   if (panel) panel.hidden = true;
+  const touchRoot = document.getElementById('touch-controls');
+  if (touchRoot && document.documentElement.classList.contains('is-mobile')) {
+    touchRoot.hidden = false;
+  }
 }
 
 export async function saveAndLoadLeaderboard(result: RunResult): Promise<void> {

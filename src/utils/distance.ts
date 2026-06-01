@@ -16,12 +16,12 @@ export function formatDistanceHud(progressM: number, totalM: number): string {
 export function formatGameOverMessage(
   progressM: number,
   totalM: number,
-  gameScore: number,
-  timeBonus: number,
+  _gameScore: number,
+  _timeBonus: number,
   totalScore: number,
 ): string {
   const pct = totalM > 0 ? Math.round((progressM / totalM) * 100) : 0;
-  return `${progressM}m (${pct}%)\nSCORE ${gameScore} + ${progressM}m + TIME ${timeBonus}\n= ${totalScore}pt`;
+  return `합산 ${totalScore.toLocaleString('ko-KR')}점 · ${progressM}m (${pct}%)`;
 }
 
 export function formatDeathPopupSub(final: boolean, totalM: number): string {

@@ -35,19 +35,38 @@ export function formatElapsed(ms: number): string {
   return `${min}:${sec.toString().padStart(2, '0')}`;
 }
 
-export function formatLeaderboardScore(entry: {
-  total_score: number;
-  game_score: number;
-  distance_m: number;
-  time_bonus: number;
-}): string {
-  return `${entry.total_score}pt`;
+type LeaderboardScoreFields = {
+  total_score?: number;
+  game_score?: number;
+  distance_m?: number;
+  time_bonus?: number;
+  elapsed_sec?: number;
+  elapsed_ms?: number;
+};
+
+/** 예전 저장 데이터·서버 누락 필드 보정 */
+export function resolveLeaderboardTotal(entry: LeaderboardScoreFields): number {
+  if (typeof entry.total_score === 'number' && Number.isFinite(entry.total_score)) {
+    return Math.max(0, Math.floor(entry.total_score));
+  }
+
+  const gameScore = Math.max(0, Math.floor(Number(entry.game_score) || 0));
+  const distanceM = Math.max(0, Math.floor(Number(entry.distance_m) || 0));
+
+  let timeBonus = entry.time_bonus;
+  if (typeof timeBonus !== 'number' || !Number.isFinite(timeBonus)) {
+    const elapsedMs =
+      typeof entry.elapsed_ms === 'number' && Number.isFinite(entry.elapsed_ms)
+        ? entry.elapsed_ms
+        : Math.max(0, Math.floor(Number(entry.elapsed_sec) || 0)) * 1000;
+    timeBonus = Math.max(0, TIME_BONUS_CAP_SEC - Math.floor(elapsedMs / 1000));
+  } else {
+    timeBonus = Math.max(0, Math.floor(timeBonus));
+  }
+
+  return gameScore + distanceM + timeBonus;
 }
 
-export function formatLeaderboardDetail(entry: {
-  game_score: number;
-  distance_m: number;
-  time_bonus: number;
-}): string {
-  return `S${entry.game_score}+${entry.distance_m}m+T${entry.time_bonus}`;
+export function formatLeaderboardScore(entry: LeaderboardScoreFields): string {
+  return `${resolveLeaderboardTotal(entry).toLocaleString('ko-KR')}점`;
 }

@@ -21,6 +21,35 @@ function usernameKey(username: string): string {
   return username.trim().toLowerCase();
 }
 
+function normalizeRunRecord(
+  item: Partial<RunRecord> & { username: string },
+): RunRecord {
+  const game_score = Math.max(0, Math.floor(Number(item.game_score) || 0));
+  const distance_m = Math.max(0, Math.floor(Number(item.distance_m) || 0));
+  const elapsed_ms = Math.max(
+    0,
+    Math.floor(
+      Number(item.elapsed_ms) ||
+        (Number((item as { elapsed_sec?: number }).elapsed_sec) || 0) * 1000,
+    ),
+  );
+  const breakdown = computeFinalScore(game_score, distance_m, elapsed_ms);
+  const storedTotal = Number(item.total_score);
+  const total_score =
+    Number.isFinite(storedTotal) && storedTotal > 0
+      ? Math.max(breakdown.totalScore, Math.floor(storedTotal))
+      : breakdown.totalScore;
+
+  return {
+    username: item.username.trim(),
+    game_score,
+    distance_m,
+    elapsed_ms,
+    time_bonus: breakdown.timeBonus,
+    total_score,
+  };
+}
+
 function migrateLegacyStorage(): void {
   if (localStorage.getItem(STORAGE_KEY)) return;
   for (const legacyKey of LEGACY_KEYS) {
@@ -58,10 +87,11 @@ export function loadCacheMap(): Map<string, RunRecord> {
     const map = new Map<string, RunRecord>();
     for (const item of parsed) {
       if (!item?.username) continue;
-      const key = usernameKey(item.username);
+      const record = normalizeRunRecord(item);
+      const key = usernameKey(record.username);
       const prev = map.get(key);
-      if (!prev || item.total_score > prev.total_score) {
-        map.set(key, item);
+      if (!prev || record.total_score > prev.total_score) {
+        map.set(key, record);
       }
     }
     return map;
