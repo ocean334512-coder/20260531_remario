@@ -25,17 +25,32 @@ body {
   user-select: none;
 }
 
-#app canvas {
+/* PC: 960×540 FIT — 좌우 레터박스 */
+html:not(.is-mobile) #app canvas {
   display: block;
   margin: 0 auto;
 }
 
-@media (orientation: portrait) and (max-width: 900px) {
-  html,
-  body,
-  #app {
-    min-height: 100dvh;
-  }
+/* 모바일: 화면 전체 RESIZE */
+html.is-mobile #app {
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  height: 100svh;
+}
+
+html.is-mobile #app canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+html.is-mobile,
+html.is-mobile body {
+  min-height: 100dvh;
+  min-height: 100svh;
 }
 
 canvas {
@@ -296,6 +311,10 @@ canvas {
 }
 
 /* ── 모바일 터치 조작 (HTML 오버레이) ── */
+html:not(.is-mobile) .touch-controls {
+  display: none !important;
+}
+
 .touch-controls {
   position: fixed;
   left: 0;
@@ -330,26 +349,87 @@ canvas {
   cursor: pointer;
 }
 
-.touch-controls__btn--move {
-  width: min(52vw, 192px);
-  height: min(52vw, 192px);
-  min-width: 152px;
-  min-height: 152px;
+/* 모바일 세로 — 큰 터치 버튼 */
+html.is-mobile.is-portrait .touch-controls__btn--move {
+  width: min(48vw, 176px);
+  height: min(48vw, 176px);
+  min-width: 132px;
+  min-height: 132px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.32);
-  font-size: clamp(52px, 14vw, 76px);
+  font-size: clamp(48px, 13vw, 68px);
   line-height: 1;
   flex-shrink: 0;
 }
 
-.touch-controls__btn--jump {
-  width: min(56vw, 208px);
-  height: min(56vw, 208px);
-  min-width: 160px;
-  min-height: 160px;
+html.is-mobile.is-portrait .touch-controls__btn--jump {
+  width: min(50vw, 184px);
+  height: min(50vw, 184px);
+  min-width: 140px;
+  min-height: 140px;
   border-radius: 50%;
   background: rgba(255, 204, 0, 0.88);
-  font-size: clamp(26px, 7.6vw, 36px);
+  font-size: clamp(24px, 7vw, 34px);
+  color: #1a1a1a;
+  flex-shrink: 0;
+}
+
+/* 모바일 가로 — 버튼·여백 축소 */
+html.is-mobile.is-landscape .touch-controls {
+  gap: 16px;
+  padding: 10px 18px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+}
+
+html.is-mobile.is-landscape .touch-controls__move {
+  gap: 16px;
+}
+
+html.is-mobile.is-landscape .touch-controls__btn--move {
+  width: min(20vh, 128px);
+  height: min(20vh, 128px);
+  min-width: 96px;
+  min-height: 96px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.32);
+  font-size: clamp(36px, 9vh, 52px);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+html.is-mobile.is-landscape .touch-controls__btn--jump {
+  width: min(22vh, 136px);
+  height: min(22vh, 136px);
+  min-width: 100px;
+  min-height: 100px;
+  border-radius: 50%;
+  background: rgba(255, 204, 0, 0.88);
+  font-size: clamp(18px, 5vh, 26px);
+  color: #1a1a1a;
+  flex-shrink: 0;
+}
+
+/* is-mobile만 있고 portrait/landscape 미적용 시 fallback */
+html.is-mobile .touch-controls__btn--move {
+  width: min(48vw, 176px);
+  height: min(48vw, 176px);
+  min-width: 132px;
+  min-height: 132px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.32);
+  font-size: clamp(48px, 13vw, 68px);
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+html.is-mobile .touch-controls__btn--jump {
+  width: min(50vw, 184px);
+  height: min(50vw, 184px);
+  min-width: 140px;
+  min-height: 140px;
+  border-radius: 50%;
+  background: rgba(255, 204, 0, 0.88);
+  font-size: clamp(24px, 7vw, 34px);
   color: #1a1a1a;
   flex-shrink: 0;
 }
@@ -357,34 +437,6 @@ canvas {
 .touch-controls__btn:active {
   transform: scale(0.94);
   filter: brightness(1.08);
-}
-
-@media (orientation: landscape) {
-  .touch-controls {
-    gap: 24px;
-    padding: 12px 20px;
-    padding-bottom: max(12px, env(safe-area-inset-bottom));
-  }
-
-  .touch-controls__move {
-    gap: 24px;
-  }
-
-  .touch-controls__btn--move {
-    width: min(36vh, 176px);
-    height: min(36vh, 176px);
-    min-width: 144px;
-    min-height: 144px;
-    font-size: clamp(48px, 12vh, 68px);
-  }
-
-  .touch-controls__btn--jump {
-    width: min(40vh, 192px);
-    height: min(40vh, 192px);
-    min-width: 152px;
-    min-height: 152px;
-    font-size: clamp(24px, 6vh, 32px);
-  }
 }
 
 /* ── TOP 10 순위표 (게임 오버) ── */

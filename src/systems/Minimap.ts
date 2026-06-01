@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { isTouchDevice } from '../config/gameConfig';
-import { TOUCH_BAR_HEIGHT } from './TouchControls';
+import { getTouchBarHeight } from './TouchControls';
 
 const TERRAIN_COLORS: Record<string, number> = {
   '#': 0x6d4c2e,
@@ -70,7 +70,7 @@ export class Minimap {
     this.mapX = 10;
 
     if (isTouchDevice()) {
-      this.mapY = h - TOUCH_BAR_HEIGHT - this.mapH - 8;
+      this.mapY = h - getTouchBarHeight() - this.mapH - 8;
     } else {
       this.mapY = h - this.mapH - 12;
     }

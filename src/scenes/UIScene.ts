@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { isTouchDevice } from '../config/gameConfig';
+import { applyMobileDocumentClass, isTouchDevice } from '../config/gameConfig';
 import { STAGE1, TILE_SIZE, parseStage } from '../levels/stage1';
 import { pixelsToMeters } from '../utils/distance';
 import { Minimap } from '../systems/Minimap';
@@ -123,8 +123,8 @@ export class UIScene extends Phaser.Scene {
     this.timeText.setScrollFactor(0);
 
     const help = isTouchDevice()
-      ? '◀▶ 이동 | JUMP · v30'
-      : '← → 이동 | Space 점프 | R 재시작 · v30';
+      ? '◀▶ 이동 | JUMP · v31'
+      : '← → 이동 | Space 점프 | R 재시작 · v31';
 
     this.helpText = this.add.text(w / 2, 52, help, {
       fontFamily: 'monospace',
@@ -319,6 +319,7 @@ export class UIScene extends Phaser.Scene {
   }
 
   private onResize = (): void => {
+    applyMobileDocumentClass();
     const w = this.scale.width;
     const h = this.scale.height;
     this.playCountText.setX(w - 16);

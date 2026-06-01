@@ -1,5 +1,10 @@
 import Phaser from 'phaser';
-import { buildGameConfig, syncGameDimensions } from './config/gameConfig';
+import {
+  applyMobileDocumentClass,
+  buildGameConfig,
+  isTouchDevice,
+  syncGameDimensions,
+} from './config/gameConfig';
 import {
   installLeaderboardPersistence,
   restoreLeaderboardOnBoot,
@@ -10,7 +15,7 @@ import { waitForPlayerName } from './services/playerSession';
 import './style.css';
 
 function scheduleLayoutSync(game: Phaser.Game): void {
-  const delays = [0, 80, 200, 400, 700];
+  const delays = [0, 50, 120, 250, 500, 900, 1400];
   for (const ms of delays) {
     window.setTimeout(() => {
       syncGameDimensions(game);
@@ -20,12 +25,20 @@ function scheduleLayoutSync(game: Phaser.Game): void {
 
 async function bootstrap(): Promise<void> {
   installLeaderboardPersistence();
+  applyMobileDocumentClass();
 
   await waitForPlayerName();
 
+  // 키보드가 내려간 뒤 visualViewport가 안정된 다음 게임 시작
+  applyMobileDocumentClass();
+  if (isTouchDevice()) {
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 120);
+    });
+  }
+
   const game = new Phaser.Game(buildGameConfig());
   installPlayCountPersistence(game.registry);
-  scheduleLayoutSync(game);
 
   void Promise.all([restoreLeaderboardOnBoot(), restorePlayCountOnBoot()]);
 
@@ -36,7 +49,9 @@ async function bootstrap(): Promise<void> {
     }
     game.events.once(Phaser.Core.Events.READY, () => resolve());
   });
+
   syncGameDimensions(game);
+  scheduleLayoutSync(game);
 
   const onLayoutChange = (): void => {
     scheduleLayoutSync(game);
@@ -45,6 +60,7 @@ async function bootstrap(): Promise<void> {
   window.addEventListener('resize', onLayoutChange);
   window.addEventListener('orientationchange', onLayoutChange);
   window.visualViewport?.addEventListener('resize', onLayoutChange);
+  window.visualViewport?.addEventListener('scroll', onLayoutChange);
   screen.orientation?.addEventListener('change', onLayoutChange);
 }
 

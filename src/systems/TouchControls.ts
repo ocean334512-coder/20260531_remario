@@ -1,4 +1,4 @@
-import { isTouchDevice } from '../config/gameConfig';
+import { isPortraitViewport, isTouchDevice } from '../config/gameConfig';
 
 /** 모바일: HTML 오버레이 버튼 (Phaser 입력·회전 이슈 회피) */
 export class TouchControls {
@@ -15,7 +15,8 @@ export class TouchControls {
   static isTouchDevice = isTouchDevice;
 
   constructor() {
-    this.enabled = isTouchDevice();
+    this.enabled =
+      isTouchDevice() || document.documentElement.classList.contains('is-mobile');
     this.root = document.getElementById('touch-controls');
     if (!this.enabled || !this.root) return;
 
@@ -90,4 +91,7 @@ export class TouchControls {
 }
 
 /** 미니맵이 터치 버튼과 겹치지 않도록 하는 하단 여백(px) */
-export const TOUCH_BAR_HEIGHT = 240;
+export function getTouchBarHeight(): number {
+  if (!isTouchDevice()) return 0;
+  return isPortraitViewport() ? 220 : 120;
+}
