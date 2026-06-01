@@ -39,7 +39,7 @@ export class UIScene extends Phaser.Scene {
 
   create(): void {
     if (isTouchDevice()) {
-      this.touchControls = new TouchControls(this);
+      this.touchControls = new TouchControls();
       this.registry.set('touchControls', this.touchControls);
     }
 
@@ -80,8 +80,8 @@ export class UIScene extends Phaser.Scene {
     this.distanceText.setScrollFactor(0);
 
     const help = isTouchDevice()
-      ? '◀▶ 이동 | JUMP · 세로·가로 · v23'
-      : '← → 이동 | Space 점프 | R 재시작 · v23';
+      ? '◀▶ 이동 | JUMP · v24'
+      : '← → 이동 | Space 점프 | R 재시작 · v24';
 
     this.helpText = this.add.text(w / 2, 38, help, {
       fontFamily: 'monospace',
@@ -212,6 +212,7 @@ export class UIScene extends Phaser.Scene {
       this.hideDeathPopup();
       hideLeaderboard();
       this.hideOverlay();
+      this.touchControls?.setVisible(true);
     });
 
     const { width, height } = parseStage(STAGE1);
@@ -324,6 +325,7 @@ export class UIScene extends Phaser.Scene {
     this.restartHintText.setVisible(true);
     this.restartTapZone.setVisible(true);
     this.restartTapZone.setInteractive({ useHandCursor: false });
+    this.touchControls?.setVisible(false);
   }
 
   private hideOverlay(): void {
@@ -334,5 +336,6 @@ export class UIScene extends Phaser.Scene {
     this.restartHintText.setVisible(false);
     this.restartTapZone.setVisible(false);
     this.restartTapZone.disableInteractive();
+    this.touchControls?.setVisible(true);
   }
 }

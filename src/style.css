@@ -151,6 +151,84 @@ canvas {
   transform: scale(0.98);
 }
 
+/* ── 모바일 터치 조작 (HTML 오버레이) ── */
+.touch-controls {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+
+.touch-controls__move {
+  display: flex;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.touch-controls__btn {
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  border: 3px solid rgba(0, 0, 0, 0.35);
+  font-family: monospace;
+  font-weight: bold;
+  color: #fff;
+  cursor: pointer;
+}
+
+.touch-controls__btn--move {
+  width: min(18vw, 72px);
+  height: min(18vw, 72px);
+  min-width: 56px;
+  min-height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.32);
+  font-size: clamp(22px, 6vw, 32px);
+  line-height: 1;
+}
+
+.touch-controls__btn--jump {
+  width: min(20vw, 80px);
+  height: min(20vw, 80px);
+  min-width: 60px;
+  min-height: 60px;
+  border-radius: 50%;
+  background: rgba(255, 204, 0, 0.88);
+  font-size: clamp(12px, 3.5vw, 16px);
+  color: #1a1a1a;
+}
+
+.touch-controls__btn:active {
+  transform: scale(0.94);
+  filter: brightness(1.08);
+}
+
+@media (orientation: landscape) {
+  .touch-controls {
+    padding: 8px 20px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  .touch-controls__btn--move {
+    width: min(12vh, 64px);
+    height: min(12vh, 64px);
+  }
+
+  .touch-controls__btn--jump {
+    width: min(14vh, 70px);
+    height: min(14vh, 70px);
+  }
+}
+
 /* ── TOP 10 순위표 (게임 오버) ── */
 @media (orientation: landscape) and (max-height: 520px) {
   .leaderboard-panel {

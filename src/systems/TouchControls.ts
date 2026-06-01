@@ -1,14 +1,6 @@
-import Phaser from 'phaser';
 import { isTouchDevice } from '../config/gameConfig';
-import { computeTouchLayout, type TouchButton } from './touchLayout';
 
-type ButtonBinding = {
-  ring: Phaser.GameObjects.Arc;
-  onDown: () => void;
-  onUp: () => void;
-};
-
-/** 모바일: UIScene 위 대형 버튼 + 멀티터치 (이동+점프 동시) */
+/** 모바일: HTML 오버레이 버튼 (Phaser 입력·회전 이슈 회피) */
 export class TouchControls {
   leftDown = false;
   rightDown = false;
@@ -18,115 +10,49 @@ export class TouchControls {
 
   private jumpWasDown = false;
   private readonly enabled: boolean;
-  private readonly scene: Phaser.Scene;
-  private leftBtn!: TouchButton;
-  private rightBtn!: TouchButton;
-  private jumpBtn!: TouchButton;
-  private bindings: ButtonBinding[] = [];
+  private readonly root: HTMLElement | null;
 
   static isTouchDevice = isTouchDevice;
 
-  constructor(scene: Phaser.Scene) {
-    this.scene = scene;
+  constructor() {
     this.enabled = isTouchDevice();
-    if (!this.enabled) return;
+    this.root = document.getElementById('touch-controls');
+    if (!this.enabled || !this.root) return;
 
-    scene.input.addPointer(2);
-    this.rebuild();
-
-    scene.scale.on('resize', this.rebuild, this);
-    scene.events.once('shutdown', () => {
-      scene.scale.off('resize', this.rebuild, this);
-      this.destroyButtons();
+    this.root.hidden = false;
+    this.bindButton('btn-left', (down) => {
+      this.leftDown = down;
+    });
+    this.bindButton('btn-right', (down) => {
+      this.rightDown = down;
+    });
+    this.bindButton('btn-jump', (down) => {
+      this.jumpDown = down;
     });
   }
 
-  private rebuild = (): void => {
-    if (!this.enabled) return;
-    this.destroyButtons();
-    const layout = computeTouchLayout(this.scene.scale.width, this.scene.scale.height);
-    this.leftBtn = layout.leftBtn;
-    this.rightBtn = layout.rightBtn;
-    this.jumpBtn = layout.jumpBtn;
-    this.drawButtons();
-  };
-
-  private destroyButtons(): void {
-    for (const binding of this.bindings) {
-      binding.ring.destroy();
-    }
-    this.bindings = [];
-    this.leftDown = false;
-    this.rightDown = false;
-    this.jumpDown = false;
+  setVisible(visible: boolean): void {
+    if (this.root) this.root.hidden = !visible;
   }
 
-  private drawButtons(): void {
-    const depth = 2000;
-    const { leftBtn, rightBtn, jumpBtn } = this;
+  private bindButton(id: string, setDown: (down: boolean) => void): void {
+    const el = document.getElementById(id);
+    if (!el) return;
 
-    this.addButton(leftBtn, 0xffffff, 0.28, depth, '◀', '36px', () => {
-      this.leftDown = true;
-    }, () => {
-      this.leftDown = false;
-    });
-
-    this.addButton(rightBtn, 0xffffff, 0.28, depth, '▶', '36px', () => {
-      this.rightDown = true;
-    }, () => {
-      this.rightDown = false;
-    });
-
-    this.addButton(jumpBtn, 0xffcc00, 0.42, depth, 'JUMP', '16px', () => {
-      this.jumpDown = true;
-    }, () => {
-      this.jumpDown = false;
-    }, true);
-  }
-
-  private addButton(
-    btn: TouchButton,
-    color: number,
-    alpha: number,
-    depth: number,
-    label: string,
-    fontSize: string,
-    onDown: () => void,
-    onUp: () => void,
-    bold = false,
-  ): void {
-    const ring = this.scene.add.circle(btn.cx, btn.cy, btn.r, color, alpha);
-    ring.setScrollFactor(0).setDepth(depth);
-    ring.setStrokeStyle(3, 0x000000, 0.35);
-    ring.setInteractive(
-      new Phaser.Geom.Circle(0, 0, btn.r),
-      Phaser.Geom.Circle.Contains,
-    );
-
-    const release = (): void => {
-      onUp();
+    const onDown = (e: Event): void => {
+      e.preventDefault();
+      setDown(true);
+    };
+    const onUp = (): void => {
+      setDown(false);
     };
 
-    ring.on('pointerdown', () => {
-      onDown();
-    });
-    ring.on('pointerup', release);
-    ring.on('pointerout', release);
-
-    this.scene.add
-      .text(btn.cx, btn.cy, label, {
-        fontSize,
-        fontFamily: 'monospace',
-        fontStyle: bold ? 'bold' : 'normal',
-        color: '#ffffff',
-        stroke: '#000000',
-        strokeThickness: 4,
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(depth + 1);
-
-    this.bindings.push({ ring, onDown, onUp });
+    el.addEventListener('touchstart', onDown, { passive: false });
+    el.addEventListener('touchend', onUp);
+    el.addEventListener('touchcancel', onUp);
+    el.addEventListener('mousedown', onDown);
+    el.addEventListener('mouseup', onUp);
+    el.addEventListener('mouseleave', onUp);
   }
 
   preUpdate(): void {
@@ -136,3 +62,6 @@ export class TouchControls {
     this.jumpWasDown = this.jumpDown;
   }
 }
+
+/** 미니맵이 터치 버튼과 겹치지 않도록 하는 하단 여백(px) */
+export const TOUCH_BAR_HEIGHT = 96;

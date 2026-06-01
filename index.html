@@ -35,6 +35,13 @@
       <ol id="leaderboard-list" class="leaderboard-panel__list"></ol>
       <p id="leaderboard-status" class="leaderboard-panel__status"></p>
     </div>
+    <div id="touch-controls" class="touch-controls" hidden aria-hidden="true">
+      <div class="touch-controls__move">
+        <button id="btn-left" type="button" class="touch-controls__btn touch-controls__btn--move" aria-label="왼쪽">◀</button>
+        <button id="btn-right" type="button" class="touch-controls__btn touch-controls__btn--move" aria-label="오른쪽">▶</button>
+      </div>
+      <button id="btn-jump" type="button" class="touch-controls__btn touch-controls__btn--jump" aria-label="점프">JUMP</button>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
