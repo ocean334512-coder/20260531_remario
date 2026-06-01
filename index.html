@@ -15,8 +15,23 @@
         <p class="name-entry__studio">JS.KIM STUDIO</p>
         <form id="name-entry-form" class="name-entry__panel">
           <h1 class="name-entry__title">Super Mario</h1>
-        <p class="name-entry__desc">이름을 입력하고 게임을 시작하세요</p>
-        <input
+          <p class="name-entry__desc">캐릭터와 이름을 선택하세요</p>
+          <fieldset class="name-entry__characters-wrap">
+            <legend class="name-entry__label">캐릭터 선택</legend>
+            <div id="player-character-group" class="name-entry__characters" role="radiogroup" aria-label="캐릭터 선택">
+              <label class="name-entry__char name-entry__char--boy name-entry__char--selected">
+                <input type="radio" name="player-character" value="boy" checked />
+                <span class="name-entry__char-figure name-entry__char-figure--boy" aria-hidden="true"></span>
+                <span class="name-entry__char-name">남자아이</span>
+              </label>
+              <label class="name-entry__char name-entry__char--girl">
+                <input type="radio" name="player-character" value="girl" />
+                <span class="name-entry__char-figure name-entry__char-figure--girl" aria-hidden="true"></span>
+                <span class="name-entry__char-name">여자아이</span>
+              </label>
+            </div>
+          </fieldset>
+          <input
           id="player-name"
           class="name-entry__input"
           type="text"

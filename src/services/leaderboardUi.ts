@@ -1,11 +1,7 @@
 import { getApiBaseForDisplay } from '../config/apiConfig';
 import { formatLeaderboardDetail, formatLeaderboardScore } from '../utils/finalScore';
 import { getPlayerName } from './playerSession';
-import {
-  fetchLeaderboardFromCache,
-  fetchLeaderboardWithRetry,
-  submitScore,
-} from './leaderboardApi';
+import { fetchLeaderboardFromCache, submitAndFetchLeaderboard } from './leaderboardApi';
 import {
   cachePlayerRun,
   isSamePlayer,
@@ -70,30 +66,34 @@ export async function saveAndLoadLeaderboard(result: RunResult): Promise<void> {
   const username = getPlayerName();
   cachePlayerRun(username, result.gameScore, result.distanceM, result.elapsedMs);
 
-  try {
-    await submitScore(username, result.gameScore, result.distanceM, result.elapsedMs);
-  } catch {
-    if (status) {
-      status.textContent = '서버 저장 실패 — 로컬 기록으로 표시합니다…';
+  if (status) status.textContent = '순위표 저장·동기화 중…';
+
+  const entries = await submitAndFetchLeaderboard(
+    username,
+    result.gameScore,
+    result.distanceM,
+    result.elapsedMs,
+  );
+
+  const fromServer = entries.some((e) => e.total_score > 0);
+  renderLeaderboard(padLeaderboardToTen(entries), username);
+
+  if (status) {
+    if (fromServer) {
+      status.textContent = '순위가 서버에 저장되었습니다 (업데이트 후에도 유지)';
+    } else {
+      const hint = import.meta.env.DEV
+        ? '터미널에서 npm run dev:api 실행 후 다시 시도'
+        : '잠시 후 새로고침';
+      status.textContent = `서버 연결 실패 — 이 기기에 저장된 기록 표시 (${hint})`;
     }
   }
 
-  if (status) status.textContent = '순위표 불러오는 중…';
-
-  try {
-    const entries = await fetchLeaderboardWithRetry();
-    renderLeaderboard(padLeaderboardToTen(entries), username);
-  } catch {
+  if (!fromServer && entries.length === 0) {
     const cached = fetchLeaderboardFromCache();
     renderLeaderboard(padLeaderboardToTen(cached), username);
-    const hint = import.meta.env.DEV
-      ? '터미널에서 npm run dev:api 실행 후 다시 시도'
-      : '잠시 후 재시작하거나 새로고침';
     if (status) {
-      status.textContent =
-        cached.some((e) => e.total_score > 0)
-          ? `서버 연결 실패 — 저장된 기록 표시 중 (${hint})`
-          : `순위표를 불러오지 못했습니다. (${hint}) API: ${getApiBaseForDisplay()}`;
+      status.textContent = `순위표를 불러오지 못했습니다. API: ${getApiBaseForDisplay()}`;
     }
   }
 }

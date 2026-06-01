@@ -189,8 +189,8 @@ def init_db() -> None:
             )
             _migrate_sqlite(conn)
 
-    from app.score_store import restore_backup_if_empty
+    from app.score_store import merge_backup_on_startup
 
-    restored = restore_backup_if_empty()
-    if restored:
-        print(f"[leaderboard] restored {restored} scores from {BACKUP_PATH}")
+    merged = merge_backup_on_startup()
+    if merged:
+        print(f"[leaderboard] merged {merged} score(s) from backup into database")

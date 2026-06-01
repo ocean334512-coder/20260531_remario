@@ -109,22 +109,25 @@ def upsert_score(
     return dict(row)
 
 
-def restore_backup_if_empty() -> int:
+def merge_backup_on_startup() -> int:
+    """배포·DB 초기화 후에도 JSON 백업에서 순위 복구·병합 (항상 최고 기록 유지)."""
+    entries = load_backup()
+    if not entries:
+        return 0
+
+    merged = 0
     with get_connection() as conn:
-        if count_scores(conn) > 0:
-            return 0
-
-        restored = 0
-        for entry in load_backup():
-            game_score = int(entry.get("game_score", 0))
-            distance_m = int(entry.get("distance_m", 0))
-            elapsed_ms = int(entry.get("elapsed_ms", 0))
-            upsert_score(conn, entry["username"], game_score, distance_m, elapsed_ms)
-            restored += 1
-
-        if restored > 0:
-            export_all_scores(conn, use_postgres())
-        return restored
+        for entry in entries:
+            upsert_score(
+                conn,
+                entry["username"],
+                int(entry.get("game_score", 0)),
+                int(entry.get("distance_m", 0)),
+                int(entry.get("elapsed_ms", 0)),
+            )
+            merged += 1
+        export_all_scores(conn, use_postgres())
+    return merged
 
 
 def upsert_and_backup(

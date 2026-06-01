@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { gameConfig, syncGameDimensions } from './config/gameConfig';
-import { syncCacheToServer } from './services/leaderboardApi';
+import {
+  installLeaderboardPersistence,
+  restoreLeaderboardOnBoot,
+} from './services/leaderboardPersistence';
 import { waitForPlayerName } from './services/playerSession';
 import './style.css';
 
@@ -14,8 +17,10 @@ function scheduleLayoutSync(game: Phaser.Game): void {
 }
 
 async function bootstrap(): Promise<void> {
+  installLeaderboardPersistence();
+
   await waitForPlayerName();
-  void syncCacheToServer();
+  await restoreLeaderboardOnBoot();
 
   const game = new Phaser.Game(gameConfig);
 

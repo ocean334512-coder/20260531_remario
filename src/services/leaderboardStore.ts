@@ -1,7 +1,9 @@
 import type { LeaderboardEntry } from './leaderboardApi';
 import { computeFinalScore } from '../utils/finalScore';
 
-const STORAGE_KEY = 'mario-leaderboard-records';
+/** SW 업데이트 후에도 유지 — 키 이름 변경 금지 */
+export const LEADERBOARD_STORAGE_KEY = 'mario-leaderboard-records';
+const STORAGE_KEY = LEADERBOARD_STORAGE_KEY;
 const LEGACY_KEYS = ['mario-leaderboard-cache-v2', 'mario-leaderboard-cache-v1'];
 
 export const LEADERBOARD_SIZE = 10;

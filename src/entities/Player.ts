@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { getAudio } from '../systems/AudioManager';
+import { getHeroTextureKey } from '../services/playerSession';
 import type { TouchControls } from '../systems/TouchControls';
 
 const MOVE_SPEED = 260;
@@ -25,9 +26,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private landingUntil = 0;
   private blinkTween: Phaser.Tweens.Tween | null = null;
   private touch: TouchControls | null = null;
+  private readonly heroTexture: string;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, 'hero', 0);
+    const heroTexture = getHeroTextureKey();
+    super(scene, x, y, heroTexture, 0);
+    this.heroTexture = heroTexture;
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
@@ -38,7 +42,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setOffset(12, 8);
     this.setAlpha(1);
     this.setTint(0xffffff);
-    this.play('hero-idle');
+    this.play(`${this.heroTexture}-idle`);
 
     const keyboard = scene.input.keyboard;
     if (!keyboard) return;
@@ -113,10 +117,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     const body = this.body as Phaser.Physics.Arcade.Body;
 
-    if (this.cursors?.left.isDown || (this.touch?.leftDown ?? false)) {
+    const left =
+      (this.cursors?.left.isDown ?? false) || (this.touch?.leftDown ?? false);
+    const right =
+      (this.cursors?.right.isDown ?? false) || (this.touch?.rightDown ?? false);
+
+    if (left && !right) {
       body.setVelocityX(-MOVE_SPEED);
       this.setFlipX(true);
-    } else if (this.cursors?.right.isDown || (this.touch?.rightDown ?? false)) {
+    } else if (right && !left) {
       body.setVelocityX(MOVE_SPEED);
       this.setFlipX(false);
     } else {
@@ -180,28 +189,29 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (!onFloor) {
       if (body.velocity.y < -40) {
-        this.playAnim('hero-jump');
+        this.playAnim('jump');
       } else {
-        this.playAnim('hero-fall');
+        this.playAnim('fall');
       }
       return;
     }
 
     if (now < this.landingUntil) {
-      this.playAnim('hero-land', 1, true);
+      this.playAnim('land', 1, true);
       return;
     }
 
     const speed = Math.abs(body.velocity.x);
     if (speed > 25) {
       const rate = Phaser.Math.Clamp(0.85 + (speed / MOVE_SPEED) * 0.45, 0.9, 1.35);
-      this.playAnim('hero-run', rate);
+      this.playAnim('run', rate);
     } else {
-      this.playAnim('hero-idle', 1);
+      this.playAnim('idle', 1);
     }
   }
 
-  private playAnim(key: string, timeScale = 1, force = false): void {
+  private playAnim(suffix: string, timeScale = 1, force = false): void {
+    const key = `${this.heroTexture}-${suffix}`;
     if (force || this.currentAnim !== key) {
       this.currentAnim = key;
       this.play(key);
@@ -234,7 +244,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setScale(1, 1);
     this.angle = 0;
     this.currentAnim = '';
-    this.play('hero-idle');
+    this.play(`${this.heroTexture}-idle`);
     this.scene.time.delayedCall(1500, () => {
       this.isInvincible = false;
       this.setAlpha(1);

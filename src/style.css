@@ -42,10 +42,13 @@ canvas {
   inset: 0;
   z-index: 10000;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: rgba(10, 10, 30, 0.92);
-  padding: 24px;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
 }
 
 .name-entry--hidden {
@@ -56,8 +59,10 @@ canvas {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
-  width: min(360px, 100%);
+  gap: 16px;
+  width: min(400px, 100%);
+  margin: auto;
+  flex-shrink: 0;
 }
 
 .name-entry__studio {
@@ -87,12 +92,19 @@ canvas {
 
 .name-entry__panel {
   width: 100%;
-  padding: 28px 24px;
+  padding: 22px 20px;
   border-radius: 16px;
   background: linear-gradient(180deg, #2d2d5a 0%, #1a1a3e 100%);
   border: 3px solid #ffeb3b;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
   text-align: center;
+}
+
+.name-entry__characters-wrap {
+  border: none;
+  margin: 0 0 16px;
+  padding: 0;
+  width: 100%;
 }
 
 .name-entry__title {
@@ -106,7 +118,133 @@ canvas {
   font-family: monospace;
   font-size: 14px;
   color: #ccc;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
+}
+
+.name-entry__label {
+  font-family: monospace;
+  font-size: 15px;
+  font-weight: bold;
+  color: #ffeb3b;
+  margin-bottom: 10px;
+  text-align: center;
+  width: 100%;
+  padding: 0;
+}
+
+.name-entry__characters {
+  display: flex;
+  gap: 14px;
+  width: 100%;
+}
+
+.name-entry__char {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 120px;
+  padding: 14px 10px;
+  border-radius: 14px;
+  border: 3px solid #5c94fc;
+  background: #0f0f24;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.name-entry__char input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.name-entry__char--selected {
+  border-color: #ffeb3b;
+  background: #1a2a4a;
+  box-shadow: 0 0 16px rgba(255, 235, 59, 0.45);
+}
+
+.name-entry__char-figure {
+  width: 56px;
+  height: 62px;
+  border-radius: 10px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.name-entry__char-figure--boy {
+  background: linear-gradient(180deg, #e52521 0 28%, #2255dd 28% 78%, #5c3010 78%);
+}
+
+.name-entry__char-figure--boy::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  width: 22px;
+  height: 18px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: #ffcc99;
+}
+
+.name-entry__char-figure--girl {
+  background: linear-gradient(180deg, #8b5240 0 22%, #ffcc99 22% 38%, #ff5c9a 38% 80%, #d94a7a 80%);
+}
+
+.name-entry__char-figure--girl::before,
+.name-entry__char-figure--girl::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #6b3a2a;
+}
+
+.name-entry__char-figure--girl::before {
+  left: 4px;
+}
+
+.name-entry__char-figure--girl::after {
+  right: 4px;
+}
+
+.name-entry__char-name {
+  font-family: monospace;
+  font-size: 15px;
+  font-weight: bold;
+  color: #fff;
+}
+
+@media (max-height: 520px) {
+  .name-entry__studio {
+    font-size: 18px;
+  }
+
+  .name-entry__title {
+    font-size: 22px;
+  }
+
+  .name-entry__char {
+    min-height: 96px;
+    padding: 10px 8px;
+  }
+
+  .name-entry__char-figure {
+    width: 44px;
+    height: 48px;
+  }
 }
 
 .name-entry__input {
@@ -161,25 +299,25 @@ canvas {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 28px;
-  padding: 12px 20px;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  gap: 20px;
+  padding: 16px 16px;
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
   pointer-events: none;
 }
 
 .touch-controls__move {
   display: flex;
-  gap: 24px;
+  gap: 20px;
   pointer-events: none;
   flex-shrink: 0;
 }
 
 .touch-controls__btn {
   pointer-events: auto;
-  touch-action: manipulation;
+  touch-action: none;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
-  border: 3px solid rgba(0, 0, 0, 0.35);
+  border: 4px solid rgba(0, 0, 0, 0.35);
   font-family: monospace;
   font-weight: bold;
   color: #fff;
@@ -187,25 +325,25 @@ canvas {
 }
 
 .touch-controls__btn--move {
-  width: min(26vw, 96px);
-  height: min(26vw, 96px);
-  min-width: 76px;
-  min-height: 76px;
+  width: min(52vw, 192px);
+  height: min(52vw, 192px);
+  min-width: 152px;
+  min-height: 152px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.32);
-  font-size: clamp(26px, 7vw, 38px);
+  font-size: clamp(52px, 14vw, 76px);
   line-height: 1;
   flex-shrink: 0;
 }
 
 .touch-controls__btn--jump {
-  width: min(28vw, 104px);
-  height: min(28vw, 104px);
-  min-width: 80px;
-  min-height: 80px;
+  width: min(56vw, 208px);
+  height: min(56vw, 208px);
+  min-width: 160px;
+  min-height: 160px;
   border-radius: 50%;
   background: rgba(255, 204, 0, 0.88);
-  font-size: clamp(13px, 3.8vw, 18px);
+  font-size: clamp(26px, 7.6vw, 36px);
   color: #1a1a1a;
   flex-shrink: 0;
 }
@@ -217,27 +355,29 @@ canvas {
 
 @media (orientation: landscape) {
   .touch-controls {
-    gap: 32px;
-    padding: 10px 24px;
-    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    gap: 24px;
+    padding: 12px 20px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
   }
 
   .touch-controls__move {
-    gap: 28px;
+    gap: 24px;
   }
 
   .touch-controls__btn--move {
-    width: min(18vh, 88px);
-    height: min(18vh, 88px);
-    min-width: 72px;
-    min-height: 72px;
+    width: min(36vh, 176px);
+    height: min(36vh, 176px);
+    min-width: 144px;
+    min-height: 144px;
+    font-size: clamp(48px, 12vh, 68px);
   }
 
   .touch-controls__btn--jump {
-    width: min(20vh, 96px);
-    height: min(20vh, 96px);
-    min-width: 76px;
-    min-height: 76px;
+    width: min(40vh, 192px);
+    height: min(40vh, 192px);
+    min-width: 152px;
+    min-height: 152px;
+    font-size: clamp(24px, 6vh, 32px);
   }
 }
 

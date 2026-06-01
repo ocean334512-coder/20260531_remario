@@ -21,22 +21,36 @@ const sleep = (ms: number): Promise<void> =>
     window.setTimeout(resolve, ms);
   });
 
+/** 로컬에 쌓인 모든 기록을 서버 DB·백업 파일로 동기화 */
 export async function syncCacheToServer(): Promise<void> {
   const items = getAllCachedRuns();
   if (items.length === 0) return;
 
-  try {
-    const res = await fetch(apiUrl('/api/scores/sync'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items }),
-    });
-    if (!res.ok) {
-      throw new Error(`sync failed: ${res.status}`);
-    }
-  } catch {
-    /* ignore */
+  const res = await fetch(apiUrl('/api/scores/sync'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  });
+  if (!res.ok) {
+    throw new Error(`sync failed: ${res.status}`);
   }
+}
+
+export async function syncCacheToServerWithRetry(attempts = 5): Promise<boolean> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      await syncCacheToServer();
+      return true;
+    } catch (err) {
+      lastError = err;
+      if (i < attempts - 1) {
+        await sleep(1500 * (i + 1));
+      }
+    }
+  }
+  console.warn('[leaderboard] server sync failed', lastError);
+  return false;
 }
 
 export async function submitScore(
@@ -68,7 +82,8 @@ export async function fetchLeaderboard(limit = LEADERBOARD_SIZE): Promise<Leader
     throw new Error(`leaderboard failed: ${res.status}`);
   }
   const data = (await res.json()) as { items: LeaderboardEntry[] };
-  return mergeLeaderboardEntries(data.items ?? [], limit);
+  const serverItems = data.items ?? [];
+  return mergeLeaderboardEntries(serverItems, limit);
 }
 
 export async function fetchLeaderboardWithRetry(
@@ -89,4 +104,27 @@ export async function fetchLeaderboardWithRetry(
 
 export function fetchLeaderboardFromCache(limit = LEADERBOARD_SIZE): LeaderboardEntry[] {
   return mergeLeaderboardEntries([], limit);
+}
+
+/** 저장 후 서버·로컬·백업을 맞춘 뒤 순위표 반환 */
+export async function submitAndFetchLeaderboard(
+  username: string,
+  gameScore: number,
+  distanceM: number,
+  elapsedMs: number,
+  limit = LEADERBOARD_SIZE,
+): Promise<LeaderboardEntry[]> {
+  try {
+    await submitScore(username, gameScore, distanceM, elapsedMs);
+  } catch {
+    /* 로컬에는 이미 저장됨 */
+  }
+
+  await syncCacheToServerWithRetry(4);
+
+  try {
+    return await fetchLeaderboardWithRetry(limit);
+  } catch {
+    return fetchLeaderboardFromCache(limit);
+  }
 }
