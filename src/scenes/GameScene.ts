@@ -3,6 +3,7 @@ import { TILE_SIZE, STAGE1, STAGE1_DECOR, parseStage } from '../levels/stage1';
 import { spawnDecorations, addBackgroundHills } from '../assets/decorAssets';
 import { Player } from '../entities/Player';
 import { Enemy } from '../entities/Enemy';
+import { PlatformJumperEnemy } from '../entities/PlatformJumperEnemy';
 import { ThrowerEnemy } from '../entities/ThrowerEnemy';
 import { FlyerEnemy } from '../entities/FlyerEnemy';
 import { HopperEnemy } from '../entities/HopperEnemy';
@@ -228,6 +229,9 @@ export class GameScene extends Phaser.Scene {
           coin.play('coin-spin');
         } else if (cell === 'e') {
           this.walkers.create(px, py - 16);
+        } else if (cell === 'p') {
+          const jumper = new PlatformJumperEnemy(this, px, py - 16);
+          this.walkers.add(jumper);
         } else if (cell === 'T') {
           this.throwers.create(px, py - 16);
         } else if (cell === 'H') {

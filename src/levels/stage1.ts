@@ -3,7 +3,7 @@ export const TILE_SIZE = 32;
 /** 현재 맵 폭 ~124 → 3배 */
 export const STAGE_WIDTH = 372;
 
-// . empty  # ground  - float  o coin  e walker  T thrower  H hopper  A airplane  f flag  S spawn
+// . empty  # ground  - float  o coin  e walker  p platform-jumper  T thrower  H hopper  A airplane  f flag  S spawn
 export const STAGE1: string[] = buildStage();
 
 export const STAGE1_DECOR = buildDecor();
@@ -60,17 +60,20 @@ function buildStage(): string[] {
     rows[8] = setAt(rows[8], x, 'o');
   });
 
-  // 패트롤 적 (앞·중간은 적당히, 후반만 밀집)
-  const walkers = [
-    22, 48, 75, 108, 142, 178, 215,
-    252, 265, 278, 292, 305, 318, 332, 345, 358,
-  ];
+  // 초반: 발판 점프형(p) — 덜 위협적, 블럭 타고 접근
+  const platformJumpers = [22, 48, 75, 108];
+  platformJumpers.forEach((x) => {
+    rows[10] = setAt(rows[10], x, 'p');
+  });
+
+  // 패트롤 적 (중·후반)
+  const walkers = [142, 178, 215, 252, 265, 278, 292, 305, 318, 332, 345, 358];
   walkers.forEach((x) => {
     rows[10] = setAt(rows[10], x, 'e');
   });
 
-  // 투사체 적 (앞·중간 소수, 후반 집중)
-  const throwers = [38, 95, 160, 248, 268, 288, 308, 328, 348];
+  // 투사체 적 (초반 38 제거, 중·후반 집중)
+  const throwers = [95, 160, 248, 268, 288, 308, 328, 348];
   throwers.forEach((x) => {
     rows[10] = setAt(rows[10], x, 'T');
   });

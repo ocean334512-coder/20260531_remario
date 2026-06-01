@@ -80,8 +80,8 @@ export class UIScene extends Phaser.Scene {
     this.distanceText.setScrollFactor(0);
 
     const help = isTouchDevice()
-      ? '◀▶ 이동 | JUMP · v24'
-      : '← → 이동 | Space 점프 | R 재시작 · v24';
+      ? '◀▶ 이동 | JUMP · v25'
+      : '← → 이동 | Space 점프 | R 재시작 · v25';
 
     this.helpText = this.add.text(w / 2, 38, help, {
       fontFamily: 'monospace',

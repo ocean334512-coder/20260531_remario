@@ -2,13 +2,13 @@ import Phaser from 'phaser';
 import type { Player } from './Player';
 
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
-  protected speed = 90;
-  protected chaseSpeed = 115;
-  protected chaseRange = 520;
+  protected speed = 80;
+  protected chaseSpeed = 100;
+  protected chaseRange = 360;
   protected edgeProbe = 22;
   isDead = false;
   protected animKey = 'goomba-walk';
-  private patrolDir = -1;
+  protected patrolDir = -1;
 
   constructor(scene: Phaser.Scene, x: number, y: number, texture = 'goomba') {
     super(scene, x, y, texture, 0);

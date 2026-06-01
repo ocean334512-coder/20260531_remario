@@ -64,4 +64,4 @@ export class TouchControls {
 }
 
 /** 미니맵이 터치 버튼과 겹치지 않도록 하는 하단 여백(px) */
-export const TOUCH_BAR_HEIGHT = 96;
+export const TOUCH_BAR_HEIGHT = 120;
