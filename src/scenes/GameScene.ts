@@ -178,6 +178,10 @@ export class GameScene extends Phaser.Scene {
     };
     this.input.once('pointerdown', unlockAudio);
     this.input.keyboard?.once('keydown', unlockAudio);
+
+    if (!this.scene.isActive('UIScene')) {
+      this.scene.launch('UIScene');
+    }
   }
 
   update(): void {

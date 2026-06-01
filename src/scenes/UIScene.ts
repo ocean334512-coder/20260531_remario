@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { isTouchDevice } from '../config/gameConfig';
 import { STAGE1, TILE_SIZE, parseStage } from '../levels/stage1';
+import { pixelsToMeters } from '../utils/distance';
 import { Minimap } from '../systems/Minimap';
 import { Fireworks } from '../systems/Fireworks';
 import {
@@ -52,6 +53,8 @@ export class UIScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.cameras.main.setBackgroundColor('rgba(0,0,0,0)');
+
     if (isTouchDevice()) {
       this.touchControls = new TouchControls();
       this.registry.set('touchControls', this.touchControls);
@@ -62,8 +65,13 @@ export class UIScene extends Phaser.Scene {
     const score = this.registry.get('score') as number;
     const lives = this.registry.get('lives') as number;
     const playCount = (this.registry.get(PLAY_COUNT_REGISTRY_KEY) as number) ?? 0;
+    this.stageTotalM = this.resolveStageTotalM();
+
     const gameScene = this.scene.get('GameScene') as GameScene;
-    this.stageTotalM = gameScene.stageTotalM;
+    if (!gameScene) {
+      console.error('[UIScene] GameScene not found');
+      return;
+    }
 
     this.scoreText = this.add.text(16, 12, `SCORE ${score}`, {
       fontFamily: 'monospace',
@@ -115,8 +123,8 @@ export class UIScene extends Phaser.Scene {
     this.timeText.setScrollFactor(0);
 
     const help = isTouchDevice()
-      ? '◀▶ 이동 | JUMP · v29'
-      : '← → 이동 | Space 점프 | R 재시작 · v29';
+      ? '◀▶ 이동 | JUMP · v30'
+      : '← → 이동 | Space 점프 | R 재시작 · v30';
 
     this.helpText = this.add.text(w / 2, 52, help, {
       fontFamily: 'monospace',
@@ -299,6 +307,15 @@ export class UIScene extends Phaser.Scene {
       gameScene.player.y,
       gameScene.cameras.main,
     );
+  }
+
+  private resolveStageTotalM(): number {
+    const gameScene = this.scene.get('GameScene') as GameScene | undefined;
+    if (gameScene?.scene?.isActive() && gameScene.stageTotalM > 0) {
+      return gameScene.stageTotalM;
+    }
+    const { spawnX, flagX } = parseStage(STAGE1);
+    return pixelsToMeters(flagX - spawnX);
   }
 
   private onResize = (): void => {

@@ -22,7 +22,6 @@ export class BootScene extends Phaser.Scene {
     this.registry.set('score', 0);
     this.registry.set('lives', 3);
     this.registry.set(PLAY_COUNT_REGISTRY_KEY, getStoredPlayCount());
-    this.scene.launch('UIScene');
     this.scene.start('GameScene');
   }
 

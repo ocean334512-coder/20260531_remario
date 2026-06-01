@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { gameConfig, syncGameDimensions } from './config/gameConfig';
+import { buildGameConfig, syncGameDimensions } from './config/gameConfig';
 import {
   installLeaderboardPersistence,
   restoreLeaderboardOnBoot,
@@ -22,10 +22,21 @@ async function bootstrap(): Promise<void> {
   installLeaderboardPersistence();
 
   await waitForPlayerName();
-  await Promise.all([restoreLeaderboardOnBoot(), restorePlayCountOnBoot()]);
 
-  const game = new Phaser.Game(gameConfig);
+  const game = new Phaser.Game(buildGameConfig());
   installPlayCountPersistence(game.registry);
+  scheduleLayoutSync(game);
+
+  void Promise.all([restoreLeaderboardOnBoot(), restorePlayCountOnBoot()]);
+
+  await new Promise<void>((resolve) => {
+    if (game.isBooted) {
+      resolve();
+      return;
+    }
+    game.events.once(Phaser.Core.Events.READY, () => resolve());
+  });
+  syncGameDimensions(game);
 
   const onLayoutChange = (): void => {
     scheduleLayoutSync(game);
