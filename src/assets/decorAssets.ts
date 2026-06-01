@@ -22,11 +22,14 @@ export function registerDecorAssets(scene: Phaser.Scene): void {
 function drawCloud(scene: Phaser.Scene, key: string, w: number, h: number): void {
   const g = scene.make.graphics({ x: 0, y: 0 });
   const cx = w / 2;
-  g.fillStyle(0xffffff, 0.95);
+  g.fillStyle(0xc8e4ff, 0.5);
+  g.fillCircle(cx - 16, h - 10, 12);
+  g.fillCircle(cx + 16, h - 10, 12);
+  g.fillStyle(0xffffff, 0.92);
   g.fillCircle(cx - 14, h - 12, 10);
-  g.fillCircle(cx, h - 16, 12);
+  g.fillCircle(cx, h - 17, 13);
   g.fillCircle(cx + 14, h - 12, 10);
-  g.fillRoundedRect(cx - w / 2 + 6, h - 14, w - 12, 10, 5);
+  g.fillRoundedRect(cx - w / 2 + 6, h - 14, w - 12, 11, 6);
   g.generateTexture(key, w, h);
   g.destroy();
 }
@@ -57,10 +60,12 @@ function drawBush(scene: Phaser.Scene): void {
 
 function drawHill(scene: Phaser.Scene): void {
   const g = scene.make.graphics({ x: 0, y: 0 });
-  g.fillStyle(0x4a9c4a, 1);
-  g.fillEllipse(80, 50, 160, 70);
-  g.fillStyle(0x3d8a3d, 0.6);
-  g.fillEllipse(60, 55, 90, 45);
+  g.fillStyle(0x3d9e50, 1);
+  g.fillEllipse(80, 52, 168, 76);
+  g.fillStyle(0x52b868, 0.85);
+  g.fillEllipse(55, 54, 100, 50);
+  g.fillStyle(0x68cc78, 0.5);
+  g.fillEllipse(110, 48, 70, 38);
   g.generateTexture('hill', 160, 70);
   g.destroy();
 }
@@ -151,11 +156,12 @@ export function spawnDecorations(
 }
 
 export function addBackgroundHills(scene: Phaser.Scene, worldWidth: number, groundY: number): void {
-  const count = Math.ceil(worldWidth / 220) + 1;
+  const count = Math.ceil(worldWidth / 200) + 1;
   for (let i = 0; i < count; i += 1) {
-    const hill = scene.add.image(i * 220 + 80, groundY + 8, 'hill');
-    hill.setScrollFactor(0.12);
-    hill.setDepth(-25);
-    hill.setAlpha(0.85);
+    const hill = scene.add.image(i * 200 + 80, groundY + 6, 'hill');
+    hill.setScrollFactor(0.1);
+    hill.setDepth(-40);
+    hill.setAlpha(0.9);
+    hill.setTint(0x88c888);
   }
 }

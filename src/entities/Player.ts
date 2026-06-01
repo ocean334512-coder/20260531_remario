@@ -21,6 +21,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   inputLocked = false;
 
   private currentAnim = '';
+  private wasOnFloor = true;
+  private landingUntil = 0;
   private touch: TouchControls | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
@@ -30,8 +32,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.setCollideWorldBounds(false);
     this.setBounce(0);
-    this.setSize(12, 26);
-    this.setOffset(10, 5);
+    this.setDisplaySize(40, 40);
+    this.setSize(14, 28);
+    this.setOffset(13, 10);
     this.play('hero-idle');
 
     const keyboard = scene.input.keyboard;
@@ -78,6 +81,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       body.setVelocityY(JUMP_INITIAL);
       this.boostMs = MAX_BOOST_MS;
       this.jumpPressedAt = this.scene.time.now;
+      this.playJumpSquash();
       getAudio(this.scene)?.playJump();
     }
 
@@ -113,14 +117,57 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.updateAnimation();
+    this.updateMotionJuice(body);
+  }
+
+  private playJumpSquash(): void {
+    this.scene.tweens.killTweensOf(this);
+    this.setScale(1, 1);
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: 0.88,
+      scaleY: 1.14,
+      duration: 70,
+      yoyo: true,
+      ease: 'Quad.easeOut',
+    });
+  }
+
+  private playLandSquash(): void {
+    this.landingUntil = this.scene.time.now + 180;
+    this.scene.tweens.killTweensOf(this);
+    this.scene.tweens.add({
+      targets: this,
+      scaleX: 1.18,
+      scaleY: 0.82,
+      duration: 90,
+      yoyo: true,
+      ease: 'Bounce.easeOut',
+      onComplete: () => {
+        this.setScale(1, 1);
+      },
+    });
+  }
+
+  private updateMotionJuice(body: Phaser.Physics.Arcade.Body): void {
+    const onFloor = body.onFloor();
+    if (onFloor && !this.wasOnFloor && body.velocity.y >= 0) {
+      this.playLandSquash();
+    }
+    this.wasOnFloor = onFloor;
+
+    const moving = Math.abs(body.velocity.x) > 30;
+    const targetAngle = moving ? Phaser.Math.Clamp(body.velocity.x * 0.018, -6, 6) : 0;
+    this.angle = Phaser.Math.Linear(this.angle, targetAngle, 0.2);
   }
 
   private updateAnimation(): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     const onFloor = body.onFloor();
+    const now = this.scene.time.now;
 
     if (!onFloor) {
-      if (body.velocity.y < -30) {
+      if (body.velocity.y < -40) {
         this.playAnim('hero-jump');
       } else {
         this.playAnim('hero-fall');
@@ -128,21 +175,26 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
+    if (now < this.landingUntil) {
+      this.playAnim('hero-land', 1, true);
+      return;
+    }
+
     const speed = Math.abs(body.velocity.x);
-    if (speed > 20) {
-      this.playAnim('hero-run', Phaser.Math.Clamp(speed / MOVE_SPEED, 0.75, 1.35));
+    if (speed > 25) {
+      const rate = Phaser.Math.Clamp(0.85 + (speed / MOVE_SPEED) * 0.5, 0.9, 1.45);
+      this.playAnim('hero-run', rate);
     } else {
-      this.playAnim('hero-idle');
+      this.playAnim('hero-idle', 1);
     }
   }
 
-  private playAnim(key: string, timeScale = 1): void {
-    if (this.currentAnim !== key) {
+  private playAnim(key: string, timeScale = 1, force = false): void {
+    if (force || this.currentAnim !== key) {
       this.currentAnim = key;
       this.play(key);
     }
-    const anim = this.anims.currentAnim;
-    if (anim?.key === key) {
+    if (this.anims.currentAnim?.key === key) {
       this.anims.timeScale = timeScale;
     }
   }
@@ -151,6 +203,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.inputLocked = true;
     this.setVelocity(0, 0);
     this.currentAnim = '';
+    this.angle = 0;
   }
 
   respawn(x: number, y: number): void {
@@ -159,9 +212,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.inputLocked = false;
     this.boostMs = 0;
     this.jumpPressedAt = 0;
+    this.wasOnFloor = true;
+    this.landingUntil = 0;
     this.setPosition(x, y);
     this.setVelocity(0, 0);
     this.setAlpha(1);
+    this.setScale(1, 1);
+    this.angle = 0;
     this.currentAnim = '';
     this.play('hero-idle');
     this.scene.time.delayedCall(1500, () => {

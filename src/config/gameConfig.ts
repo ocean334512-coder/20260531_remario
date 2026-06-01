@@ -40,7 +40,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
   width: initialSize.width,
   height: initialSize.height,
   parent: 'app',
-  backgroundColor: '#5c94fc',
+  backgroundColor: '#6eb5f0',
   pixelArt: true,
   scale: {
     mode: isTouchDevice() ? Phaser.Scale.RESIZE : Phaser.Scale.FIT,

@@ -105,9 +105,9 @@ function buildDecor() {
     ty: number;
   }> = [];
 
-  for (let x = 8; x < STAGE_WIDTH; x += 22) {
-    items.push({ kind: 'cloud', tx: x, ty: 2 });
-    items.push({ kind: 'cloudSmall', tx: x + 10, ty: 1 });
+  for (let x = 6; x < STAGE_WIDTH; x += 18) {
+    items.push({ kind: 'cloud', tx: x, ty: 1 + (x % 3) });
+    items.push({ kind: 'cloudSmall', tx: x + 9, ty: 2 + (x % 2) });
   }
   for (let x = 4; x < STAGE_WIDTH; x += 14) {
     items.push({ kind: x % 28 === 4 ? 'tree' : 'bush', tx: x, ty: 10 });

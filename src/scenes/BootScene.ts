@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { registerHeroAssets } from '../assets/heroAssets';
 import { registerDecorAssets } from '../assets/decorAssets';
 import { registerEnemyAssets } from '../assets/enemyAssets';
+import { registerSkyAssets } from '../assets/skyAssets';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -10,6 +11,7 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     registerDecorAssets(this);
+    registerSkyAssets(this);
     registerHeroAssets(this);
     registerEnemyAssets(this);
     this.makeCircleTexture('projectile', 10, 0xff6600, 0xcc3300);

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { TILE_SIZE, STAGE1, STAGE1_DECOR, parseStage } from '../levels/stage1';
 import { spawnDecorations, addBackgroundHills } from '../assets/decorAssets';
+import { SkyBackground } from '../systems/SkyBackground';
 import { Player } from '../entities/Player';
 import { Enemy } from '../entities/Enemy';
 import { PlatformJumperEnemy } from '../entities/PlatformJumperEnemy';
@@ -61,7 +62,9 @@ export class GameScene extends Phaser.Scene {
 
     this.physics.world.setBounds(0, 0, this.worldWidth, this.worldHeight + 200);
     this.cameras.main.setBounds(0, 0, this.worldWidth, this.worldHeight + 200);
-    this.cameras.main.setBackgroundColor('#5c94fc');
+    this.cameras.main.setBackgroundColor('#6eb5f0');
+
+    new SkyBackground(this, this.worldWidth, groundRow * TILE_SIZE);
 
     this.platforms = this.physics.add.staticGroup();
     this.walkers = this.physics.add.group({ classType: Enemy, runChildUpdate: true });
