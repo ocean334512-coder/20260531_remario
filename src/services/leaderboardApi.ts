@@ -1,7 +1,7 @@
 import { apiUrl } from '../config/apiConfig';
 import {
-  cachePlayerScore,
-  getAllCachedScores,
+  cachePlayerRun,
+  getAllCachedRuns,
   LEADERBOARD_SIZE,
   mergeLeaderboardEntries,
 } from './leaderboardStore';
@@ -9,7 +9,11 @@ import {
 export type LeaderboardEntry = {
   rank: number;
   username: string;
+  total_score: number;
+  game_score: number;
   distance_m: number;
+  elapsed_sec: number;
+  time_bonus: number;
 };
 
 const sleep = (ms: number): Promise<void> =>
@@ -17,9 +21,8 @@ const sleep = (ms: number): Promise<void> =>
     window.setTimeout(resolve, ms);
   });
 
-/** 게임 시작 시 로컬 기록을 서버로 보내 복구 (배포 후 DB 초기화 대비) */
 export async function syncCacheToServer(): Promise<void> {
-  const items = getAllCachedScores();
+  const items = getAllCachedRuns();
   if (items.length === 0) return;
 
   try {
@@ -32,17 +35,27 @@ export async function syncCacheToServer(): Promise<void> {
       throw new Error(`sync failed: ${res.status}`);
     }
   } catch {
-    // 서버 슬립·오프라인 — 무시 (게임은 계속)
+    /* ignore */
   }
 }
 
-export async function submitScore(username: string, distanceM: number): Promise<void> {
-  cachePlayerScore(username, distanceM);
+export async function submitScore(
+  username: string,
+  gameScore: number,
+  distanceM: number,
+  elapsedMs: number,
+): Promise<void> {
+  cachePlayerRun(username, gameScore, distanceM, elapsedMs);
 
   const res = await fetch(apiUrl('/api/scores'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, distance_m: distanceM }),
+    body: JSON.stringify({
+      username,
+      game_score: gameScore,
+      distance_m: distanceM,
+      elapsed_ms: elapsedMs,
+    }),
   });
   if (!res.ok) {
     throw new Error(`submit failed: ${res.status}`);
@@ -55,11 +68,9 @@ export async function fetchLeaderboard(limit = LEADERBOARD_SIZE): Promise<Leader
     throw new Error(`leaderboard failed: ${res.status}`);
   }
   const data = (await res.json()) as { items: LeaderboardEntry[] };
-  const serverItems = data.items ?? [];
-  return mergeLeaderboardEntries(serverItems, limit);
+  return mergeLeaderboardEntries(data.items ?? [], limit);
 }
 
-/** Render 무료 플랜 슬립 대비 재시도 */
 export async function fetchLeaderboardWithRetry(
   limit = LEADERBOARD_SIZE,
   attempts = 3,
@@ -76,7 +87,6 @@ export async function fetchLeaderboardWithRetry(
   throw lastError;
 }
 
-/** API 실패 시 로컬 캐시만으로 순위표 구성 */
 export function fetchLeaderboardFromCache(limit = LEADERBOARD_SIZE): LeaderboardEntry[] {
   return mergeLeaderboardEntries([], limit);
 }

@@ -8,16 +8,24 @@ import {
   formatDeathPopupSub,
   formatGameOverMessage,
 } from '../utils/distance';
+import { computeFinalScore, formatElapsed } from '../utils/finalScore';
 import { GameScene } from './GameScene';
 import { hideLeaderboard, saveAndLoadLeaderboard } from '../services/leaderboardUi';
 import { TouchControls } from '../systems/TouchControls';
 
-type ProgressPayload = { progressM: number; totalM: number; final?: boolean };
+type ProgressPayload = {
+  progressM: number;
+  totalM: number;
+  final?: boolean;
+  gameScore?: number;
+  elapsedMs?: number;
+};
 
 export class UIScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
   private livesText!: Phaser.GameObjects.Text;
   private distanceText!: Phaser.GameObjects.Text;
+  private timeText!: Phaser.GameObjects.Text;
   private overlayText!: Phaser.GameObjects.Text;
   private overlaySubText!: Phaser.GameObjects.Text;
   private restartHintText!: Phaser.GameObjects.Text;
@@ -79,11 +87,21 @@ export class UIScene extends Phaser.Scene {
     this.distanceText.setOrigin(0.5, 0);
     this.distanceText.setScrollFactor(0);
 
-    const help = isTouchDevice()
-      ? '◀▶ 이동 | JUMP · v27'
-      : '← → 이동 | Space 점프 | R 재시작 · v27';
+    this.timeText = this.add.text(w - 16, 34, 'TIME 0:00', {
+      fontFamily: 'monospace',
+      fontSize: '16px',
+      color: '#b3e5fc',
+      stroke: '#000000',
+      strokeThickness: 2,
+    });
+    this.timeText.setOrigin(1, 0);
+    this.timeText.setScrollFactor(0);
 
-    this.helpText = this.add.text(w / 2, 38, help, {
+    const help = isTouchDevice()
+      ? '◀▶ 이동 | JUMP · v28'
+      : '← → 이동 | Space 점프 | R 재시작 · v28';
+
+    this.helpText = this.add.text(w / 2, 52, help, {
       fontFamily: 'monospace',
       fontSize: isTouchDevice() ? '12px' : '14px',
       color: '#ffffff',
@@ -191,8 +209,25 @@ export class UIScene extends Phaser.Scene {
       if (final) this.fireworks.stop();
       this.showDeathPopup(payload.progressM, payload.totalM, final);
       if (final) {
-        this.showOverlay('', formatGameOverMessage(payload.progressM, payload.totalM), true);
-        void saveAndLoadLeaderboard(payload.progressM);
+        const gameScore = payload.gameScore ?? 0;
+        const elapsedMs = payload.elapsedMs ?? 0;
+        const breakdown = computeFinalScore(gameScore, payload.progressM, elapsedMs);
+        this.showOverlay(
+          '',
+          formatGameOverMessage(
+            payload.progressM,
+            payload.totalM,
+            breakdown.gameScore,
+            breakdown.timeBonus,
+            breakdown.totalScore,
+          ),
+          true,
+        );
+        void saveAndLoadLeaderboard({
+          gameScore,
+          distanceM: payload.progressM,
+          elapsedMs,
+        });
       }
     });
     gameScene.events.on('stage-clear', (payload: ProgressPayload) => {
@@ -208,6 +243,7 @@ export class UIScene extends Phaser.Scene {
       this.scoreText.setText('SCORE 0');
       this.livesText.setText('LIVES 3');
       this.distanceText.setText(formatDistanceHud(0, this.stageTotalM));
+      this.timeText.setText('TIME 0:00');
       this.fireworks.stop();
       this.hideDeathPopup();
       hideLeaderboard();
@@ -232,6 +268,10 @@ export class UIScene extends Phaser.Scene {
     this.fireworks.update(_time, delta);
 
     const gameScene = this.scene.get('GameScene') as GameScene;
+    if (gameScene?.scene?.isActive()) {
+      this.timeText.setText(`TIME ${formatElapsed(gameScene.getElapsedMs())}`);
+    }
+
     if (!gameScene?.player?.active) return;
 
     this.minimap.updatePlayer(
@@ -245,6 +285,7 @@ export class UIScene extends Phaser.Scene {
     const w = this.scale.width;
     const h = this.scale.height;
     this.livesText.setX(w - 16);
+    this.timeText.setX(w - 16);
     this.distanceText.setX(w / 2);
     this.helpText.setX(w / 2);
     this.layoutDeathPopup();

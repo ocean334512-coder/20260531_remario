@@ -33,6 +33,8 @@ export class GameScene extends Phaser.Scene {
   private isStageClear = false;
   private touchControls: TouchControls | null = null;
   private maxProgressM = 0;
+  private runStartAt = 0;
+  private runStopped = false;
 
   constructor() {
     super('GameScene');
@@ -59,6 +61,10 @@ export class GameScene extends Phaser.Scene {
     this.worldHeight = height * TILE_SIZE;
     this.stageTotalM = pixelsToMeters(flagX - spawnX);
     this.maxProgressM = 0;
+    this.runStartAt = this.time.now;
+    this.runStopped = false;
+    this.registry.set('runStartAt', this.runStartAt);
+    this.registry.set('runStopped', false);
 
     this.physics.world.setBounds(0, 0, this.worldWidth, this.worldHeight + 200);
     this.cameras.main.setBounds(0, 0, this.worldWidth, this.worldHeight + 200);
@@ -197,6 +203,13 @@ export class GameScene extends Phaser.Scene {
     return clampProgressM(pixelsToMeters(playerX - this.spawnX), this.stageTotalM);
   }
 
+  getElapsedMs(): number {
+    if (this.runStopped) {
+      return (this.registry.get('runElapsedMs') as number) ?? 0;
+    }
+    return Math.max(0, this.time.now - this.runStartAt);
+  }
+
   private cleanupFallenEnemies(): void {
     const pitY = this.worldHeight + 48;
     const removeFallen = (group: Phaser.Physics.Arcade.Group): void => {
@@ -299,6 +312,10 @@ export class GameScene extends Phaser.Scene {
 
   private gameOver(): void {
     this.isGameOver = true;
+    this.runStopped = true;
+    this.registry.set('runStopped', true);
+    const elapsedMs = this.getElapsedMs();
+    this.registry.set('runElapsedMs', elapsedMs);
     this.player.isDead = true;
     this.player.setVelocity(0, 0);
     getAudio(this)?.playGameOver();
@@ -306,6 +323,8 @@ export class GameScene extends Phaser.Scene {
       progressM: this.maxProgressM,
       totalM: this.stageTotalM,
       final: true,
+      gameScore: this.registry.get('score') as number,
+      elapsedMs,
     });
   }
 

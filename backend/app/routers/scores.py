@@ -3,31 +3,27 @@ from fastapi import APIRouter, Query
 from app.database import get_connection, use_postgres
 from app.score_store import upsert_and_backup
 from app.schemas import BulkScoreSync, LeaderboardEntry, LeaderboardResponse, ScoreCreate
+from app.score_store import LEADERBOARD_POSTGRES, LEADERBOARD_SQLITE
 
 router = APIRouter(prefix="/scores", tags=["scores"])
-
-LEADERBOARD_SQLITE = """
-SELECT username, distance_m
-FROM scores
-ORDER BY distance_m DESC, username ASC
-LIMIT ?
-"""
-
-LEADERBOARD_POSTGRES = """
-SELECT username, distance_m
-FROM scores
-ORDER BY distance_m DESC, username ASC
-LIMIT %s
-"""
 
 
 @router.post("", status_code=201)
 def submit_score(body: ScoreCreate):
-    row = upsert_and_backup(body.username, body.distance_m)
+    row = upsert_and_backup(
+        body.username,
+        body.game_score,
+        body.distance_m,
+        body.elapsed_ms,
+    )
     return {
         "id": row["id"],
         "username": row["username"],
+        "game_score": row["game_score"],
         "distance_m": row["distance_m"],
+        "elapsed_ms": row["elapsed_ms"],
+        "time_bonus": row["time_bonus"],
+        "total_score": row["total_score"],
     }
 
 
@@ -35,7 +31,12 @@ def submit_score(body: ScoreCreate):
 def sync_scores(body: BulkScoreSync):
     synced = 0
     for item in body.items:
-        upsert_and_backup(item.username, item.distance_m)
+        upsert_and_backup(
+            item.username,
+            item.game_score,
+            item.distance_m,
+            item.elapsed_ms,
+        )
         synced += 1
     return {"synced": synced}
 
@@ -51,7 +52,15 @@ def get_leaderboard(limit: int = Query(default=10, ge=1, le=50)):
             rows = conn.execute(LEADERBOARD_SQLITE, (limit,)).fetchall()
 
     items = [
-        LeaderboardEntry(rank=i + 1, username=row["username"], distance_m=row["distance_m"])
+        LeaderboardEntry(
+            rank=i + 1,
+            username=row["username"],
+            total_score=row["total_score"],
+            game_score=row["game_score"],
+            distance_m=row["distance_m"],
+            elapsed_sec=max(0, int(row["elapsed_ms"]) // 1000),
+            time_bonus=row["time_bonus"],
+        )
         for i, row in enumerate(rows)
     ]
     return LeaderboardResponse(items=items)

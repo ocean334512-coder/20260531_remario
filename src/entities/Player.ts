@@ -23,6 +23,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private currentAnim = '';
   private wasOnFloor = true;
   private landingUntil = 0;
+  private blinkTween: Phaser.Tweens.Tween | null = null;
   private touch: TouchControls | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
@@ -32,9 +33,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     this.setCollideWorldBounds(false);
     this.setBounce(0);
-    this.setDisplaySize(40, 40);
-    this.setSize(14, 28);
-    this.setOffset(13, 10);
+    this.setDisplaySize(36, 40);
+    this.setSize(12, 26);
+    this.setOffset(12, 8);
+    this.setAlpha(1);
+    this.setTint(0xffffff);
     this.play('hero-idle');
 
     const keyboard = scene.input.keyboard;
@@ -104,6 +107,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   updateMovement(): void {
     if (this.isDead || this.inputLocked) return;
 
+    if (!this.isInvincible) {
+      this.setAlpha(1);
+    }
+
     const body = this.body as Phaser.Physics.Arcade.Body;
 
     if (this.cursors?.left.isDown || (this.touch?.leftDown ?? false)) {
@@ -123,26 +130,31 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private playJumpSquash(): void {
     this.scene.tweens.killTweensOf(this);
     this.setScale(1, 1);
+    this.setAlpha(1);
     this.scene.tweens.add({
       targets: this,
-      scaleX: 0.88,
-      scaleY: 1.14,
-      duration: 70,
+      scaleX: 0.94,
+      scaleY: 1.06,
+      duration: 60,
       yoyo: true,
       ease: 'Quad.easeOut',
+      onComplete: () => {
+        this.setScale(1, 1);
+      },
     });
   }
 
   private playLandSquash(): void {
-    this.landingUntil = this.scene.time.now + 180;
+    this.landingUntil = this.scene.time.now + 140;
     this.scene.tweens.killTweensOf(this);
+    this.setAlpha(1);
     this.scene.tweens.add({
       targets: this,
-      scaleX: 1.18,
-      scaleY: 0.82,
-      duration: 90,
+      scaleX: 1.08,
+      scaleY: 0.92,
+      duration: 70,
       yoyo: true,
-      ease: 'Bounce.easeOut',
+      ease: 'Quad.easeOut',
       onComplete: () => {
         this.setScale(1, 1);
       },
@@ -157,8 +169,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.wasOnFloor = onFloor;
 
     const moving = Math.abs(body.velocity.x) > 30;
-    const targetAngle = moving ? Phaser.Math.Clamp(body.velocity.x * 0.018, -6, 6) : 0;
-    this.angle = Phaser.Math.Linear(this.angle, targetAngle, 0.2);
+    const targetAngle = moving ? Phaser.Math.Clamp(body.velocity.x * 0.012, -4, 4) : 0;
+    this.angle = Phaser.Math.Linear(this.angle, targetAngle, 0.15);
   }
 
   private updateAnimation(): void {
@@ -182,7 +194,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     const speed = Math.abs(body.velocity.x);
     if (speed > 25) {
-      const rate = Phaser.Math.Clamp(0.85 + (speed / MOVE_SPEED) * 0.5, 0.9, 1.45);
+      const rate = Phaser.Math.Clamp(0.85 + (speed / MOVE_SPEED) * 0.45, 0.9, 1.35);
       this.playAnim('hero-run', rate);
     } else {
       this.playAnim('hero-idle', 1);
@@ -204,6 +216,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setVelocity(0, 0);
     this.currentAnim = '';
     this.angle = 0;
+    this.setAlpha(1);
   }
 
   respawn(x: number, y: number): void {
@@ -214,6 +227,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.jumpPressedAt = 0;
     this.wasOnFloor = true;
     this.landingUntil = 0;
+    this.stopBlink();
     this.setPosition(x, y);
     this.setVelocity(0, 0);
     this.setAlpha(1);
@@ -223,16 +237,33 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.play('hero-idle');
     this.scene.time.delayedCall(1500, () => {
       this.isInvincible = false;
+      this.setAlpha(1);
     });
   }
 
   blinkInvincible(): void {
-    this.scene.tweens.add({
+    this.stopBlink();
+    this.setAlpha(1);
+    this.blinkTween = this.scene.tweens.add({
       targets: this,
-      alpha: 0.3,
+      alpha: 0.35,
       duration: 100,
       yoyo: true,
       repeat: 5,
+      onComplete: () => {
+        this.setAlpha(1);
+        this.blinkTween = null;
+      },
     });
+  }
+
+  private stopBlink(): void {
+    if (this.blinkTween) {
+      this.blinkTween.stop();
+      this.blinkTween = null;
+    }
+    this.scene.tweens.killTweensOf(this);
+    this.setAlpha(1);
+    this.setScale(1, 1);
   }
 }

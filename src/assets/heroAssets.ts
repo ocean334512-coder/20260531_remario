@@ -9,12 +9,10 @@ const C = {
   skin: '#ffcc99',
   skinShadow: '#e8a86e',
   overall: '#2255dd',
-  overallLight: '#4477ff',
-  overallDark: '#1a3d99',
+  overallLight: '#5588ff',
   shoe: '#5c3010',
-  glove: '#ffffff',
   eye: '#1a1a1a',
-  cheek: '#ff9977',
+  cheek: '#ffaa99',
 };
 
 const POSES = [
@@ -112,64 +110,52 @@ function drawHero(ctx: CanvasRenderingContext2D, ox: number, pose: Pose): void {
   const runIndex = POSES.indexOf(pose) - 3;
   const isRun = runIndex >= 0 && runIndex < 8;
   const phase = isRun ? (runIndex / 8) * Math.PI * 2 : 0;
-  const legSwing = isRun ? Math.sin(phase) * 5 : 0;
-  const armSwing = isRun ? Math.cos(phase) * 4 : 0;
+  const legSwing = isRun ? Math.sin(phase) * 4 : 0;
+  const armSwing = isRun ? Math.cos(phase) * 3 : 0;
   const bob =
-    pose === 'idle2' ? -1.5 : pose === 'idle3' ? -0.5 : isRun && runIndex % 2 === 0 ? -2 : 0;
-  const squash = pose === 'land' ? 1.15 : pose === 'jump' ? 0.92 : 1;
-  const stretchY = pose === 'jump' ? 1.06 : pose === 'fall' ? 1.04 : 1 / squash;
+    pose === 'idle2' ? -1 : pose === 'idle3' ? -0.5 : isRun && runIndex % 2 === 0 ? -1.5 : 0;
 
+  const hy = 10 + bob;
   const cx = ox + FW / 2;
-  const baseY = 8 + bob;
 
-  ctx.save();
-  ctx.translate(cx, FH / 2);
-  ctx.scale(1, stretchY);
-  ctx.translate(-cx, -FH / 2);
+  round(ctx, ox + 16, hy, 16, 6, 3, C.hatDark);
+  round(ctx, ox + 15, hy - 1, 18, 7, 4, C.hat);
 
-  const hy = baseY;
+  circle(ctx, cx, hy + 10, 9, C.skin);
+  circle(ctx, cx - 4, hy + 9, 1.8, C.eye);
+  circle(ctx, cx + 4, hy + 9, 1.8, C.eye);
+  circle(ctx, cx - 5, hy + 12, 1.5, C.cheek);
+  circle(ctx, cx + 5, hy + 12, 1.5, C.cheek);
 
-  round(ctx, ox + 14, hy + 2, 20, 7, 4, C.hatDark);
-  round(ctx, ox + 12, hy, 24, 9, 5, C.hat);
-  round(ctx, ox + 10, hy + 6, 28, 14, 7, C.skin);
-  circle(ctx, ox + 18, hy + 12, 2.2, C.eye);
-  circle(ctx, ox + 28, hy + 12, 2.2, C.eye);
-  circle(ctx, ox + 16, hy + 16, 2, C.cheek);
-  circle(ctx, ox + 30, hy + 16, 2, C.cheek);
-  round(ctx, ox + 22, hy + 17, 4, 2, 1, C.skinShadow);
-
-  round(ctx, ox + 12, hy + 18, 24, 14, 5, C.overall);
-  round(ctx, ox + 14, hy + 20, 8, 8, 3, C.overallLight);
-  round(ctx, ox + 26, hy + 20, 8, 8, 3, C.overallLight);
-  round(ctx, ox + 18, hy + 28, 12, 4, 2, C.glove);
+  round(ctx, ox + 17, hy + 17, 14, 12, 4, C.overall);
+  round(ctx, ox + 19, hy + 19, 4, 5, 2, C.overallLight);
+  round(ctx, ox + 25, hy + 19, 4, 5, 2, C.overallLight);
 
   if (pose === 'jump') {
-    circle(ctx, ox + 10, hy + 14, 4, C.skin);
-    circle(ctx, ox + 36, hy + 14, 4, C.skin);
-    round(ctx, ox + 14, hy + 30, 8, 10, 3, C.overall);
-    round(ctx, ox + 26, hy + 30, 8, 10, 3, C.overall);
-    round(ctx, ox + 12, hy + 38, 10, 5, 2, C.shoe);
-    round(ctx, ox + 26, hy + 38, 10, 5, 2, C.shoe);
+    circle(ctx, ox + 14, hy + 16, 3, C.skin);
+    circle(ctx, ox + 34, hy + 16, 3, C.skin);
+    round(ctx, ox + 18, hy + 28, 5, 9, 2, C.overall);
+    round(ctx, ox + 25, hy + 28, 5, 9, 2, C.overall);
+    round(ctx, ox + 17, hy + 36, 7, 4, 2, C.shoe);
+    round(ctx, ox + 24, hy + 36, 7, 4, 2, C.shoe);
   } else if (pose === 'fall') {
-    round(ctx, ox + 6, hy + 22, 8, 4, 2, C.skin);
-    round(ctx, ox + 34, hy + 22, 8, 4, 2, C.skin);
-    round(ctx, ox + 12, hy + 30, 9, 8, 3, C.overall);
-    round(ctx, ox + 27, hy + 30, 9, 8, 3, C.overall);
-    round(ctx, ox + 10, hy + 36, 11, 5, 2, C.shoe);
-    round(ctx, ox + 27, hy + 36, 11, 5, 2, C.shoe);
+    round(ctx, ox + 12, hy + 20, 6, 3, 2, C.skin);
+    round(ctx, ox + 30, hy + 20, 6, 3, 2, C.skin);
+    round(ctx, ox + 17, hy + 28, 6, 7, 2, C.overall);
+    round(ctx, ox + 25, hy + 28, 6, 7, 2, C.overall);
+    round(ctx, ox + 16, hy + 34, 8, 4, 2, C.shoe);
+    round(ctx, ox + 24, hy + 34, 8, 4, 2, C.shoe);
   } else if (pose === 'land') {
-    round(ctx, ox + 11, hy + 32, 11, 6, 3, C.overallDark);
-    round(ctx, ox + 26, hy + 32, 11, 6, 3, C.overallDark);
-    round(ctx, ox + 9, hy + 36, 13, 5, 2, C.shoe);
-    round(ctx, ox + 26, hy + 36, 13, 5, 2, C.shoe);
+    round(ctx, ox + 17, hy + 30, 7, 5, 2, C.overall);
+    round(ctx, ox + 24, hy + 30, 7, 5, 2, C.overall);
+    round(ctx, ox + 16, hy + 34, 8, 4, 2, C.shoe);
+    round(ctx, ox + 24, hy + 34, 8, 4, 2, C.shoe);
   } else {
-    round(ctx, ox + 8 + armSwing, hy + 22, 6, 10, 3, C.skin);
-    round(ctx, ox + 34 - armSwing, hy + 22, 6, 10, 3, C.skin);
-    round(ctx, ox + 13 + legSwing, hy + 30, 9, 10, 4, C.overall);
-    round(ctx, ox + 26 - legSwing, hy + 30, 9, 10, 4, C.overall);
-    round(ctx, ox + 11 + legSwing, hy + 38, 11, 5, 2, C.shoe);
-    round(ctx, ox + 26 - legSwing, hy + 38, 11, 5, 2, C.shoe);
+    round(ctx, ox + 12 + armSwing, hy + 20, 4, 8, 2, C.skin);
+    round(ctx, ox + 32 - armSwing, hy + 20, 4, 8, 2, C.skin);
+    round(ctx, ox + 16 + legSwing, hy + 28, 6, 9, 3, C.overall);
+    round(ctx, ox + 26 - legSwing, hy + 28, 6, 9, 3, C.overall);
+    round(ctx, ox + 15 + legSwing, hy + 36, 7, 4, 2, C.shoe);
+    round(ctx, ox + 26 - legSwing, hy + 36, 7, 4, 2, C.shoe);
   }
-
-  ctx.restore();
 }

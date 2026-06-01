@@ -1,4 +1,5 @@
 import { getApiBaseForDisplay } from '../config/apiConfig';
+import { formatLeaderboardDetail, formatLeaderboardScore } from '../utils/finalScore';
 import { getPlayerName } from './playerSession';
 import {
   fetchLeaderboardFromCache,
@@ -6,11 +7,17 @@ import {
   submitScore,
 } from './leaderboardApi';
 import {
-  cachePlayerScore,
+  cachePlayerRun,
   isSamePlayer,
   padLeaderboardToTen,
   type DisplayLeaderboardEntry,
 } from './leaderboardStore';
+
+export type RunResult = {
+  gameScore: number;
+  distanceM: number;
+  elapsedMs: number;
+};
 
 export function renderLeaderboard(
   entries: DisplayLeaderboardEntry[],
@@ -26,7 +33,7 @@ export function renderLeaderboard(
   if (!hasRealEntries) {
     status.textContent = '아직 기록이 없습니다.';
   } else {
-    status.textContent = '';
+    status.textContent = '합산: SCORE + 거리(m) + TIME보너스';
   }
 
   entries.forEach((entry) => {
@@ -38,8 +45,11 @@ export function renderLeaderboard(
       li.classList.add('leaderboard-panel__item--me');
     }
 
-    const scoreText = entry.empty ? '—' : `${entry.distance_m}m`;
-    li.innerHTML = `<span class="rank">${entry.rank}위</span><span class="name">${escapeHtml(entry.username)}</span><span class="score">${scoreText}</span>`;
+    if (entry.empty) {
+      li.innerHTML = `<span class="rank">${entry.rank}위</span><span class="name">—</span><span class="score">—</span>`;
+    } else {
+      li.innerHTML = `<span class="rank">${entry.rank}위</span><span class="name">${escapeHtml(entry.username)}</span><span class="score-col"><span class="score">${formatLeaderboardScore(entry)}</span><span class="detail">${formatLeaderboardDetail(entry)}</span></span>`;
+    }
     list.appendChild(li);
   });
 
@@ -51,17 +61,17 @@ export function hideLeaderboard(): void {
   if (panel) panel.hidden = true;
 }
 
-export async function saveAndLoadLeaderboard(distanceM: number): Promise<void> {
+export async function saveAndLoadLeaderboard(result: RunResult): Promise<void> {
   const panel = document.getElementById('leaderboard-panel');
   const status = document.getElementById('leaderboard-status');
   if (panel) panel.hidden = false;
   if (status) status.textContent = '기록 저장 중… (첫 요청은 30초 걸릴 수 있음)';
 
   const username = getPlayerName();
-  cachePlayerScore(username, distanceM);
+  cachePlayerRun(username, result.gameScore, result.distanceM, result.elapsedMs);
 
   try {
-    await submitScore(username, distanceM);
+    await submitScore(username, result.gameScore, result.distanceM, result.elapsedMs);
   } catch {
     if (status) {
       status.textContent = '서버 저장 실패 — 로컬 기록으로 표시합니다…';
@@ -81,7 +91,7 @@ export async function saveAndLoadLeaderboard(distanceM: number): Promise<void> {
       : '잠시 후 재시작하거나 새로고침';
     if (status) {
       status.textContent =
-        cached.some((e) => e.distance_m > 0)
+        cached.some((e) => e.total_score > 0)
           ? `서버 연결 실패 — 저장된 기록 표시 중 (${hint})`
           : `순위표를 불러오지 못했습니다. (${hint}) API: ${getApiBaseForDisplay()}`;
     }

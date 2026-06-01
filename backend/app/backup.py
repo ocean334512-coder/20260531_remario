@@ -11,10 +11,14 @@ def ensure_data_dir() -> None:
 def save_backup(entries: list[dict[str, Any]]) -> None:
     ensure_data_dir()
     payload = {
-        "version": 1,
+        "version": 2,
         "scores": sorted(
             entries,
-            key=lambda row: (-int(row["distance_m"]), str(row["username"]).lower()),
+            key=lambda row: (
+                -int(row.get("total_score", 0)),
+                int(row.get("elapsed_ms", 0)),
+                str(row.get("username", "")).lower(),
+            ),
         ),
     }
     BACKUP_PATH.write_text(
@@ -36,12 +40,28 @@ def load_backup() -> list[dict[str, Any]]:
             if not isinstance(item, dict):
                 continue
             username = str(item.get("username", "")).strip()
-            distance_m = item.get("distance_m")
-            if not username or not isinstance(distance_m, int):
+            if not username:
                 continue
-            entries.append({"username": username, "distance_m": distance_m})
+            if "total_score" in item:
+                entries.append(
+                    {
+                        "username": username,
+                        "game_score": int(item.get("game_score", 0)),
+                        "distance_m": int(item.get("distance_m", 0)),
+                        "elapsed_ms": int(item.get("elapsed_ms", 0)),
+                    }
+                )
+            elif "distance_m" in item:
+                entries.append(
+                    {
+                        "username": username,
+                        "game_score": 0,
+                        "distance_m": int(item["distance_m"]),
+                        "elapsed_ms": int(item.get("elapsed_ms", 600_000)),
+                    }
+                )
         return entries
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError, TypeError, ValueError):
         return []
 
 
@@ -49,14 +69,18 @@ def export_all_scores(conn: Any, use_pg: bool) -> None:
     if use_pg:
         cur = conn.cursor()
         cur.execute(
-            "SELECT username, distance_m FROM scores ORDER BY distance_m DESC, username ASC"
+            """
+            SELECT username, game_score, distance_m, elapsed_ms, time_bonus, total_score
+            FROM scores ORDER BY total_score DESC, elapsed_ms ASC, username ASC
+            """
         )
         rows = cur.fetchall()
     else:
         rows = conn.execute(
-            "SELECT username, distance_m FROM scores ORDER BY distance_m DESC, username ASC"
+            """
+            SELECT username, game_score, distance_m, elapsed_ms, time_bonus, total_score
+            FROM scores ORDER BY total_score DESC, elapsed_ms ASC, username ASC
+            """
         ).fetchall()
 
-    save_backup(
-        [{"username": row["username"], "distance_m": row["distance_m"]} for row in rows]
-    )
+    save_backup([dict(row) for row in rows])

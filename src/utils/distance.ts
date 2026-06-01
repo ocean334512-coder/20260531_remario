@@ -13,9 +13,15 @@ export function formatDistanceHud(progressM: number, totalM: number): string {
   return `${progressM}m / ${totalM}m`;
 }
 
-export function formatGameOverMessage(progressM: number, totalM: number): string {
+export function formatGameOverMessage(
+  progressM: number,
+  totalM: number,
+  gameScore: number,
+  timeBonus: number,
+  totalScore: number,
+): string {
   const pct = totalM > 0 ? Math.round((progressM / totalM) * 100) : 0;
-  return `전체 ${totalM}m 중 ${pct}%`;
+  return `${progressM}m (${pct}%)\nSCORE ${gameScore} + ${progressM}m + TIME ${timeBonus}\n= ${totalScore}pt`;
 }
 
 export function formatDeathPopupSub(final: boolean, totalM: number): string {
