@@ -1,6 +1,9 @@
 import type { LeaderboardEntry } from './leaderboardApi';
 
-const STORAGE_KEY = 'mario-leaderboard-cache-v2';
+/** 버전과 무관하게 유지되는 키 (SW/앱 업데이트 후에도 보존) */
+const STORAGE_KEY = 'mario-leaderboard-records';
+const LEGACY_KEYS = ['mario-leaderboard-cache-v2', 'mario-leaderboard-cache-v1'];
+
 export const LEADERBOARD_SIZE = 10;
 
 type CachedScore = {
@@ -12,7 +15,19 @@ function usernameKey(username: string): string {
   return username.trim().toLowerCase();
 }
 
-function loadCacheMap(): Map<string, CachedScore> {
+function migrateLegacyStorage(): void {
+  if (localStorage.getItem(STORAGE_KEY)) return;
+  for (const legacyKey of LEGACY_KEYS) {
+    const raw = localStorage.getItem(legacyKey);
+    if (raw) {
+      localStorage.setItem(STORAGE_KEY, raw);
+      return;
+    }
+  }
+}
+
+export function loadCacheMap(): Map<string, CachedScore> {
+  migrateLegacyStorage();
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return new Map();
@@ -40,7 +55,7 @@ function persistCache(map: Map<string, CachedScore>): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
-/** 브라우저에 최고 기록 보관 (서버 리셋·오프라인 대비) */
+/** 브라우저에 최고 기록 보관 (서버 복구·오프라인 대비) */
 export function cachePlayerScore(username: string, distanceM: number): void {
   const key = usernameKey(username);
   const map = loadCacheMap();
@@ -51,7 +66,12 @@ export function cachePlayerScore(username: string, distanceM: number): void {
   }
 }
 
-/** 서버·로컬 캐시 병합 후 상위 N명 */
+/** 서버 동기화용 — 이 브라우저에 저장된 모든 기록 */
+export function getAllCachedScores(): Array<{ username: string; distance_m: number }> {
+  return [...loadCacheMap().values()];
+}
+
+/** 서버·로컬 병합 (기존 기록은 삭제하지 않음) */
 export function mergeLeaderboardEntries(
   serverEntries: LeaderboardEntry[],
   limit = LEADERBOARD_SIZE,

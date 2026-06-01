@@ -1,5 +1,10 @@
 import { apiUrl } from '../config/apiConfig';
-import { cachePlayerScore, LEADERBOARD_SIZE, mergeLeaderboardEntries } from './leaderboardStore';
+import {
+  cachePlayerScore,
+  getAllCachedScores,
+  LEADERBOARD_SIZE,
+  mergeLeaderboardEntries,
+} from './leaderboardStore';
 
 export type LeaderboardEntry = {
   rank: number;
@@ -11,6 +16,25 @@ const sleep = (ms: number): Promise<void> =>
   new Promise((resolve) => {
     window.setTimeout(resolve, ms);
   });
+
+/** 게임 시작 시 로컬 기록을 서버로 보내 복구 (배포 후 DB 초기화 대비) */
+export async function syncCacheToServer(): Promise<void> {
+  const items = getAllCachedScores();
+  if (items.length === 0) return;
+
+  try {
+    const res = await fetch(apiUrl('/api/scores/sync'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
+    if (!res.ok) {
+      throw new Error(`sync failed: ${res.status}`);
+    }
+  } catch {
+    // 서버 슬립·오프라인 — 무시 (게임은 계속)
+  }
+}
 
 export async function submitScore(username: string, distanceM: number): Promise<void> {
   cachePlayerScore(username, distanceM);

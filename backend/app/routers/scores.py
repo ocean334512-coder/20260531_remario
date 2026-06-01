@@ -1,27 +1,10 @@
 from fastapi import APIRouter, Query
 
-from app.database import get_connection, use_postgres, username_key
-from app.schemas import LeaderboardEntry, LeaderboardResponse, ScoreCreate
+from app.database import get_connection, use_postgres
+from app.score_store import upsert_and_backup
+from app.schemas import BulkScoreSync, LeaderboardEntry, LeaderboardResponse, ScoreCreate
 
 router = APIRouter(prefix="/scores", tags=["scores"])
-
-UPSERT_SQLITE = """
-INSERT INTO scores (username_key, username, distance_m, updated_at)
-VALUES (?, ?, ?, datetime('now'))
-ON CONFLICT(username_key) DO UPDATE SET
-    username = excluded.username,
-    distance_m = MAX(scores.distance_m, excluded.distance_m),
-    updated_at = datetime('now')
-"""
-
-UPSERT_POSTGRES = """
-INSERT INTO scores (username_key, username, distance_m, updated_at)
-VALUES (%s, %s, %s, NOW())
-ON CONFLICT(username_key) DO UPDATE SET
-    username = EXCLUDED.username,
-    distance_m = GREATEST(scores.distance_m, EXCLUDED.distance_m),
-    updated_at = NOW()
-"""
 
 LEADERBOARD_SQLITE = """
 SELECT username, distance_m
@@ -40,28 +23,21 @@ LIMIT %s
 
 @router.post("", status_code=201)
 def submit_score(body: ScoreCreate):
-    key = username_key(body.username)
-    with get_connection() as conn:
-        if use_postgres():
-            cur = conn.cursor()
-            cur.execute(UPSERT_POSTGRES, (key, body.username, body.distance_m))
-            cur.execute(
-                "SELECT id, distance_m FROM scores WHERE username_key = %s",
-                (key,),
-            )
-            row = cur.fetchone()
-        else:
-            conn.execute(UPSERT_SQLITE, (key, body.username, body.distance_m))
-            row = conn.execute(
-                "SELECT id, distance_m FROM scores WHERE username_key = ?",
-                (key,),
-            ).fetchone()
-
+    row = upsert_and_backup(body.username, body.distance_m)
     return {
         "id": row["id"],
-        "username": body.username,
+        "username": row["username"],
         "distance_m": row["distance_m"],
     }
+
+
+@router.post("/sync")
+def sync_scores(body: BulkScoreSync):
+    synced = 0
+    for item in body.items:
+        upsert_and_backup(item.username, item.distance_m)
+        synced += 1
+    return {"synced": synced}
 
 
 @router.get("/leaderboard", response_model=LeaderboardResponse)

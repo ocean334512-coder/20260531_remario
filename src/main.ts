@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { gameConfig, syncGameDimensions } from './config/gameConfig';
+import { syncCacheToServer } from './services/leaderboardApi';
 import { waitForPlayerName } from './services/playerSession';
 import './style.css';
 
@@ -14,6 +15,7 @@ function scheduleLayoutSync(game: Phaser.Game): void {
 
 async function bootstrap(): Promise<void> {
   await waitForPlayerName();
+  void syncCacheToServer();
 
   const game = new Phaser.Game(gameConfig);
 

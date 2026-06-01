@@ -2,7 +2,7 @@ import sqlite3
 from contextlib import contextmanager
 from typing import Any, Iterator
 
-from app.config import DATABASE_PATH, DATABASE_URL
+from app.config import BACKUP_PATH, DATABASE_PATH, DATABASE_URL, DATA_DIR
 
 
 def use_postgres() -> bool:
@@ -98,22 +98,27 @@ def init_db() -> None:
             cur.execute(
                 "CREATE INDEX IF NOT EXISTS idx_scores_distance ON scores (distance_m DESC)"
             )
-        return
-
-    DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with get_connection() as conn:
-        conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS scores (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username_key TEXT NOT NULL UNIQUE,
-                username TEXT NOT NULL,
-                distance_m INTEGER NOT NULL,
-                updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    else:
+        DATABASE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with get_connection() as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS scores (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username_key TEXT NOT NULL UNIQUE,
+                    username TEXT NOT NULL,
+                    distance_m INTEGER NOT NULL,
+                    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+                )
+                """
             )
-            """
-        )
-        conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_scores_distance ON scores (distance_m DESC)"
-        )
-        _migrate_sqlite_legacy(conn)
+            conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_scores_distance ON scores (distance_m DESC)"
+            )
+            _migrate_sqlite_legacy(conn)
+
+    from app.score_store import restore_backup_if_empty
+
+    restored = restore_backup_if_empty()
+    if restored:
+        print(f"[leaderboard] restored {restored} scores from {BACKUP_PATH}")
