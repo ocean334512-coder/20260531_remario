@@ -93,5 +93,5 @@ export class TouchControls {
 /** 미니맵이 터치 버튼과 겹치지 않도록 하는 하단 여백(px) */
 export function getTouchBarHeight(): number {
   if (!isTouchDevice()) return 0;
-  return isPortraitViewport() ? 220 : 120;
+  return isPortraitViewport() ? 110 : 120;
 }

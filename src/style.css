@@ -349,27 +349,37 @@ html:not(.is-mobile) .touch-controls {
   cursor: pointer;
 }
 
-/* 모바일 세로 — 큰 터치 버튼 */
+/* 모바일 세로 — 터치 버튼 (기존 대비 약 50%) */
+html.is-mobile.is-portrait .touch-controls {
+  gap: 12px;
+  padding: 10px 12px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+}
+
+html.is-mobile.is-portrait .touch-controls__move {
+  gap: 12px;
+}
+
 html.is-mobile.is-portrait .touch-controls__btn--move {
-  width: min(48vw, 176px);
-  height: min(48vw, 176px);
-  min-width: 132px;
-  min-height: 132px;
+  width: min(24vw, 88px);
+  height: min(24vw, 88px);
+  min-width: 66px;
+  min-height: 66px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.32);
-  font-size: clamp(48px, 13vw, 68px);
+  font-size: clamp(24px, 6.5vw, 34px);
   line-height: 1;
   flex-shrink: 0;
 }
 
 html.is-mobile.is-portrait .touch-controls__btn--jump {
-  width: min(50vw, 184px);
-  height: min(50vw, 184px);
-  min-width: 140px;
-  min-height: 140px;
+  width: min(25vw, 92px);
+  height: min(25vw, 92px);
+  min-width: 70px;
+  min-height: 70px;
   border-radius: 50%;
   background: rgba(255, 204, 0, 0.88);
-  font-size: clamp(24px, 7vw, 34px);
+  font-size: clamp(12px, 3.5vw, 17px);
   color: #1a1a1a;
   flex-shrink: 0;
 }
