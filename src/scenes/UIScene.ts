@@ -11,6 +11,11 @@ import {
 import { computeFinalScore, formatElapsed } from '../utils/finalScore';
 import { GameScene } from './GameScene';
 import { hideLeaderboard, saveAndLoadLeaderboard } from '../services/leaderboardUi';
+import {
+  formatLivesHud,
+  formatPlayCountHud,
+  PLAY_COUNT_REGISTRY_KEY,
+} from '../services/playCountStore';
 import { TouchControls } from '../systems/TouchControls';
 
 type ProgressPayload = {
@@ -23,6 +28,7 @@ type ProgressPayload = {
 
 export class UIScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
+  private playCountText!: Phaser.GameObjects.Text;
   private livesText!: Phaser.GameObjects.Text;
   private distanceText!: Phaser.GameObjects.Text;
   private timeText!: Phaser.GameObjects.Text;
@@ -55,6 +61,7 @@ export class UIScene extends Phaser.Scene {
     const h = this.scale.height;
     const score = this.registry.get('score') as number;
     const lives = this.registry.get('lives') as number;
+    const playCount = (this.registry.get(PLAY_COUNT_REGISTRY_KEY) as number) ?? 0;
     const gameScene = this.scene.get('GameScene') as GameScene;
     this.stageTotalM = gameScene.stageTotalM;
 
@@ -67,9 +74,19 @@ export class UIScene extends Phaser.Scene {
     });
     this.scoreText.setScrollFactor(0);
 
-    this.livesText = this.add.text(w - 16, 12, `LIVES ${lives}`, {
+    this.playCountText = this.add.text(w - 16, 12, formatPlayCountHud(playCount), {
       fontFamily: 'monospace',
-      fontSize: '20px',
+      fontSize: '15px',
+      color: '#c8e6c9',
+      stroke: '#000000',
+      strokeThickness: 3,
+    });
+    this.playCountText.setOrigin(1, 0);
+    this.playCountText.setScrollFactor(0);
+
+    this.livesText = this.add.text(w - 16, 34, formatLivesHud(lives), {
+      fontFamily: 'monospace',
+      fontSize: '18px',
       color: '#ffffff',
       stroke: '#000000',
       strokeThickness: 3,
@@ -87,7 +104,7 @@ export class UIScene extends Phaser.Scene {
     this.distanceText.setOrigin(0.5, 0);
     this.distanceText.setScrollFactor(0);
 
-    this.timeText = this.add.text(w - 16, 34, 'TIME 0:00', {
+    this.timeText = this.add.text(w - 16, 56, 'TIME 0:00', {
       fontFamily: 'monospace',
       fontSize: '16px',
       color: '#b3e5fc',
@@ -98,8 +115,8 @@ export class UIScene extends Phaser.Scene {
     this.timeText.setScrollFactor(0);
 
     const help = isTouchDevice()
-      ? '◀▶ 이동 | JUMP · v28'
-      : '← → 이동 | Space 점프 | R 재시작 · v28';
+      ? '◀▶ 이동 | JUMP · v29'
+      : '← → 이동 | Space 점프 | R 재시작 · v29';
 
     this.helpText = this.add.text(w / 2, 52, help, {
       fontFamily: 'monospace',
@@ -198,8 +215,11 @@ export class UIScene extends Phaser.Scene {
     gameScene.events.on('score-changed', (nextScore: number) => {
       this.scoreText.setText(`SCORE ${nextScore}`);
     });
+    gameScene.events.on('play-count-changed', (nextCount: number) => {
+      this.playCountText.setText(formatPlayCountHud(nextCount));
+    });
     gameScene.events.on('lives-changed', (nextLives: number) => {
-      this.livesText.setText(`LIVES ${nextLives}`);
+      this.livesText.setText(formatLivesHud(nextLives));
     });
     gameScene.events.on('progress-changed', (progressM: number, totalM: number) => {
       this.distanceText.setText(formatDistanceHud(progressM, totalM));
@@ -241,7 +261,7 @@ export class UIScene extends Phaser.Scene {
 
     this.events.on('reset-ui', () => {
       this.scoreText.setText('SCORE 0');
-      this.livesText.setText('LIVES 3');
+      this.livesText.setText(formatLivesHud(3));
       this.distanceText.setText(formatDistanceHud(0, this.stageTotalM));
       this.timeText.setText('TIME 0:00');
       this.fireworks.stop();
@@ -284,6 +304,7 @@ export class UIScene extends Phaser.Scene {
   private onResize = (): void => {
     const w = this.scale.width;
     const h = this.scale.height;
+    this.playCountText.setX(w - 16);
     this.livesText.setX(w - 16);
     this.timeText.setX(w - 16);
     this.distanceText.setX(w / 2);

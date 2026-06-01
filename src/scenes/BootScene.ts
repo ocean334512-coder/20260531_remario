@@ -3,6 +3,7 @@ import { registerHeroAssets } from '../assets/heroAssets';
 import { registerDecorAssets } from '../assets/decorAssets';
 import { registerEnemyAssets } from '../assets/enemyAssets';
 import { registerSkyAssets } from '../assets/skyAssets';
+import { getStoredPlayCount, PLAY_COUNT_REGISTRY_KEY } from '../services/playCountStore';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -20,6 +21,7 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     this.registry.set('score', 0);
     this.registry.set('lives', 3);
+    this.registry.set(PLAY_COUNT_REGISTRY_KEY, getStoredPlayCount());
     this.scene.launch('UIScene');
     this.scene.start('GameScene');
   }

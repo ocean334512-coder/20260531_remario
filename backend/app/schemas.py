@@ -47,3 +47,12 @@ class ScoreSyncItem(BaseModel):
 
 class BulkScoreSync(BaseModel):
     items: list[ScoreSyncItem] = Field(min_length=1, max_length=500)
+
+
+class PlayCountResponse(BaseModel):
+    stage_id: str
+    play_count: int = Field(ge=0)
+
+
+class PlayCountAdd(BaseModel):
+    add: int = Field(ge=0, le=100_000)

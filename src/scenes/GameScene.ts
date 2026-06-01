@@ -12,6 +12,7 @@ import { FlagPole } from '../entities/FlagPole';
 import { handlePlayerEnemyCollision } from '../systems/CollisionHandler';
 import { AudioManager, getAudio } from '../systems/AudioManager';
 import type { TouchControls } from '../systems/TouchControls';
+import { recordStagePlay } from '../services/playCountService';
 import { clampProgressM, pixelsToMeters } from '../utils/distance';
 
 export class GameScene extends Phaser.Scene {
@@ -41,6 +42,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
+    recordStagePlay(this);
     this.isGameOver = false;
     this.isStageClear = false;
 

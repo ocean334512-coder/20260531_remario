@@ -189,8 +189,16 @@ def init_db() -> None:
             )
             _migrate_sqlite(conn)
 
+    from app.play_count_store import init_play_count_tables, merge_play_count_backup_on_startup
     from app.score_store import merge_backup_on_startup
+
+    with get_connection() as conn:
+        init_play_count_tables(conn)
 
     merged = merge_backup_on_startup()
     if merged:
         print(f"[leaderboard] merged {merged} score(s) from backup into database")
+
+    play_merged = merge_play_count_backup_on_startup()
+    if play_merged:
+        print(f"[play-count] merged backup into database for {play_merged} stage(s)")
