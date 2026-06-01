@@ -11,6 +11,18 @@ body {
   height: 100dvh;
   background: #1a1a2e;
   overflow: hidden;
+  overscroll-behavior: none;
+  overscroll-behavior-x: none;
+}
+
+html.game-guard-active,
+html.game-guard-active body {
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 #app {
@@ -308,6 +320,37 @@ canvas {
 
 .name-entry__btn:active {
   transform: scale(0.98);
+}
+
+/* ── 게임 종료 (모바일) ── */
+.game-exit {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 9500;
+  width: 44px;
+  height: 44px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  font-family: monospace;
+  font-weight: bold;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+}
+
+.game-exit:active {
+  transform: scale(0.94);
+  background: rgba(80, 0, 0, 0.75);
+}
+
+html:not(.is-mobile) .game-exit {
+  display: none !important;
 }
 
 /* ── 모바일 터치 조작 (HTML 오버레이) ── */

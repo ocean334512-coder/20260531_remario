@@ -6,9 +6,16 @@ import {
   syncGameDimensions,
 } from './config/gameConfig';
 import {
+  bindExitButton,
+  hideExitButton,
+  showExitButton,
+  waitForGameExit,
+} from './services/gameExit';
+import {
   installLeaderboardPersistence,
   restoreLeaderboardOnBoot,
 } from './services/leaderboardPersistence';
+import { installNavigationGuard } from './services/navigationGuard';
 import { installPlayCountPersistence } from './services/playCountPersistence';
 import { restorePlayCountOnBoot } from './services/playCountService';
 import { waitForPlayerName } from './services/playerSession';
@@ -23,13 +30,31 @@ function scheduleLayoutSync(game: Phaser.Game): void {
   }
 }
 
-async function bootstrap(): Promise<void> {
-  installLeaderboardPersistence();
+function bindLayoutHandlers(game: Phaser.Game): () => void {
+  const onLayoutChange = (): void => {
+    scheduleLayoutSync(game);
+  };
+
+  window.addEventListener('resize', onLayoutChange);
+  window.addEventListener('orientationchange', onLayoutChange);
+  window.visualViewport?.addEventListener('resize', onLayoutChange);
+  window.visualViewport?.addEventListener('scroll', onLayoutChange);
+  screen.orientation?.addEventListener('change', onLayoutChange);
+
+  return () => {
+    window.removeEventListener('resize', onLayoutChange);
+    window.removeEventListener('orientationchange', onLayoutChange);
+    window.visualViewport?.removeEventListener('resize', onLayoutChange);
+    window.visualViewport?.removeEventListener('scroll', onLayoutChange);
+    screen.orientation?.removeEventListener('change', onLayoutChange);
+  };
+}
+
+async function runOneGameSession(): Promise<void> {
   applyMobileDocumentClass();
 
   await waitForPlayerName();
 
-  // 키보드가 내려간 뒤 visualViewport가 안정된 다음 게임 시작
   applyMobileDocumentClass();
   if (isTouchDevice()) {
     await new Promise<void>((resolve) => {
@@ -39,6 +64,11 @@ async function bootstrap(): Promise<void> {
 
   const game = new Phaser.Game(buildGameConfig());
   installPlayCountPersistence(game.registry);
+  bindExitButton();
+  showExitButton();
+
+  const releaseNavigationGuard = installNavigationGuard();
+  const unbindLayout = bindLayoutHandlers(game);
 
   void Promise.all([restoreLeaderboardOnBoot(), restorePlayCountOnBoot()]);
 
@@ -53,15 +83,30 @@ async function bootstrap(): Promise<void> {
   syncGameDimensions(game);
   scheduleLayoutSync(game);
 
-  const onLayoutChange = (): void => {
-    scheduleLayoutSync(game);
-  };
+  await waitForGameExit();
 
-  window.addEventListener('resize', onLayoutChange);
-  window.addEventListener('orientationchange', onLayoutChange);
-  window.visualViewport?.addEventListener('resize', onLayoutChange);
-  window.visualViewport?.addEventListener('scroll', onLayoutChange);
-  screen.orientation?.addEventListener('change', onLayoutChange);
+  unbindLayout();
+  releaseNavigationGuard();
+  hideExitButton();
+  game.destroy(true);
+}
+
+async function bootstrap(): Promise<void> {
+  installLeaderboardPersistence();
+  applyMobileDocumentClass();
+  bindExitButton();
+
+  for (;;) {
+    try {
+      await runOneGameSession();
+    } catch (err) {
+      console.error('[game] session error', err);
+      hideExitButton();
+      await new Promise<void>((resolve) => {
+        window.setTimeout(resolve, 500);
+      });
+    }
+  }
 }
 
 bootstrap();
