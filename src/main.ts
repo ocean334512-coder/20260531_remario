@@ -20,6 +20,7 @@ import { installPlayCountPersistence } from './services/playCountPersistence';
 import { restorePlayCountOnBoot } from './services/playCountService';
 import { teardownGameAudio } from './systems/AudioManager';
 import { waitForPlayerName } from './services/playerSession';
+import { refreshAdSenseSlots } from './services/adsense';
 import './style.css';
 
 function scheduleLayoutSync(game: Phaser.Game): void {
@@ -97,6 +98,8 @@ async function bootstrap(): Promise<void> {
   installLeaderboardPersistence();
   applyMobileDocumentClass();
   bindExitButton();
+
+  window.setTimeout(() => refreshAdSenseSlots(), 800);
 
   for (;;) {
     try {

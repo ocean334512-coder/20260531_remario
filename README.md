@@ -25,6 +25,23 @@ HUD **`· v13`** = 최신 빌드
 
 ---
 
+## AdSense (구글 애드센스)
+
+배포 후 다음 URL이 동작해야 합니다.
+
+| 파일 | URL |
+|------|-----|
+| ads.txt | `https://도메인/ads.txt` |
+| 개인정보 | `/privacy.html` |
+| 소개 | `/about.html` |
+| 문의 | `/contact.html` |
+| 이용약관 | `/terms.html` |
+
+애드센스 콘솔에서 사이트 연결·ads.txt 확인 후 심사 신청하세요.  
+[고품질 사이트 가이드](https://adsense-ko.googleblog.com/2012/04/blog-post_25.html) 기준으로 필수 정책 페이지·연락처·네비게이션을 포함했습니다.
+
+---
+
 ## 배포하기 (URL로 공유)
 
 ### 방법 1 — Vercel (가장 쉬움, 권장)

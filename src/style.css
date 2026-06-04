@@ -322,6 +322,38 @@ canvas {
   transform: scale(0.98);
 }
 
+.adsense-slot {
+  width: 100%;
+  min-height: 90px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.site-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 14px;
+  width: 100%;
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-family: monospace;
+  font-size: 11px;
+}
+
+.site-footer a {
+  color: #9ec5ff;
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  text-decoration: underline;
+  color: #c8e0ff;
+}
+
 /* ── 게임 종료 (모바일) ── */
 .game-exit {
   position: fixed;

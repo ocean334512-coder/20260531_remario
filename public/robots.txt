@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://20260531-remario.vercel.app/sitemap.xml
