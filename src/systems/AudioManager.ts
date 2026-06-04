@@ -1,32 +1,32 @@
 /**
- * Web Audio — 부드러운 BGM + 선명한 효과음 (외부 파일 없음)
+ * Web Audio — 신나는 BGM + 타격감 SFX
  */
 import Phaser from 'phaser';
 import { AUDIO_UNLOCK_EVENT } from '../services/gameAudio';
 
-const STEP_MS = 168; // 느린 템포 (~90 BPM 느낌)
+const STEP_MS = 118; // ~128 BPM
 
-/** 부드러운 아르페지오 (중저역, 고음 없음) */
-const ARP_LOOP = [
-  261, 0, 329, 0, 392, 0, 329, 0,
-  294, 0, 349, 0, 392, 0, 349, 0,
-  220, 0, 261, 0, 329, 0, 261, 0,
-  174, 0, 220, 0, 261, 0, 220, 0,
-  261, 0, 392, 0, 440, 0, 392, 0,
-  329, 0, 294, 0, 261, 0, 220, 0,
-  196, 0, 261, 0, 329, 0, 261, 0,
-  174, 0, 196, 0, 220, 0, 196, 0,
+/** 신나는 멜로디 루프 */
+const MELODY = [
+  523, 659, 784, 988, 784, 659, 523, 659,
+  698, 880, 1047, 880, 698, 587, 523, 392,
+  440, 523, 659, 784, 659, 523, 440, 392,
+  523, 659, 784, 988, 1175, 988, 784, 659,
+  523, 659, 784, 988, 784, 659, 523, 659,
+  698, 880, 1047, 880, 698, 587, 523, 392,
+  440, 523, 659, 784, 880, 784, 659, 523,
+  392, 494, 587, 698, 784, 698, 587, 494,
 ];
 
-const SOFT_BASS = [
-  65, 0, 0, 0, 0, 0, 0, 0,
-  73, 0, 0, 0, 0, 0, 0, 0,
-  55, 0, 0, 0, 0, 0, 0, 0,
-  43, 0, 0, 0, 0, 0, 0, 0,
-  65, 0, 0, 0, 0, 0, 0, 0,
-  73, 0, 0, 0, 0, 0, 0, 0,
-  55, 0, 0, 0, 0, 0, 0, 0,
-  43, 0, 0, 0, 0, 0, 0, 0,
+const BASS = [
+  131, 131, 0, 131, 98, 98, 0, 98,
+  110, 110, 0, 110, 87, 87, 0, 87,
+  98, 98, 0, 98, 131, 131, 0, 131,
+  98, 98, 0, 98, 110, 110, 0, 110,
+  131, 131, 0, 131, 98, 98, 0, 98,
+  110, 110, 0, 110, 87, 87, 0, 87,
+  98, 98, 0, 98, 131, 131, 0, 131,
+  87, 87, 0, 87, 98, 98, 0, 98,
 ];
 
 export class AudioManager {
@@ -40,6 +40,7 @@ export class AudioManager {
   private bgmStep = 0;
   private bgmTimer: ReturnType<typeof setInterval> | null = null;
   private globalUnlockHandler: (() => void) | null = null;
+  private lastFootstepAt = 0;
 
   isUnlocked(): boolean {
     return this.unlocked;
@@ -48,7 +49,10 @@ export class AudioManager {
   ensureBgmPlaying(): void {
     if (!this.unlocked) return;
     void this.resumeContext();
-    if (!this.bgmPlaying) this.startBgm();
+    if (!this.bgmPlaying || this.bgmTimer === null) {
+      this.bgmPlaying = false;
+      this.startBgm();
+    }
   }
 
   bindGlobalUnlock(): void {
@@ -83,7 +87,10 @@ export class AudioManager {
       return;
     }
 
-    const Ctx = window.AudioContext ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    const Ctx =
+      window.AudioContext ??
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext })
+        .webkitAudioContext;
     if (!Ctx) return;
 
     this.ctx = new Ctx();
@@ -92,13 +99,13 @@ export class AudioManager {
     this.bgmFilter = this.ctx.createBiquadFilter();
     this.sfxBus = this.ctx.createGain();
 
-    this.master.gain.value = 0.58;
-    this.bgmBus.gain.value = 0.14;
-    this.sfxBus.gain.value = 0.52;
+    this.master.gain.value = 0.65;
+    this.bgmBus.gain.value = 0.28;
+    this.sfxBus.gain.value = 0.62;
 
     this.bgmFilter.type = 'lowpass';
-    this.bgmFilter.frequency.value = 1800;
-    this.bgmFilter.Q.value = 0.5;
+    this.bgmFilter.frequency.value = 5200;
+    this.bgmFilter.Q.value = 0.4;
 
     this.bgmBus.connect(this.bgmFilter);
     this.bgmFilter.connect(this.master);
@@ -122,45 +129,62 @@ export class AudioManager {
   }
 
   playJump(): void {
-    this.playSweep(300, 620, 0.09, 'sine', 0.38);
-    this.playNoise(0.03, 2000, 0.08);
+    this.playSweep(220, 520, 0.1, 'square', 0.45);
+    this.scheduleTone(660, 0.06, 'square', 0.32, 0.04);
+    this.playNoise(0.025, 2400, 0.12);
+  }
+
+  playLand(): void {
+    this.playTone(120, 0.08, 'sine', 0.42, 60);
+    this.playNoise(0.04, 350, 0.38);
+  }
+
+  playRunStep(now = performance.now()): void {
+    if (now - this.lastFootstepAt < 160) return;
+    this.lastFootstepAt = now;
+    this.playTone(180, 0.04, 'triangle', 0.22);
+    this.playNoise(0.02, 900, 0.14);
   }
 
   playCoin(): void {
-    this.playTone(988, 0.05, 'sine', 0.34);
-    this.scheduleTone(1318, 0.07, 'sine', 0.3, 0.05);
-    this.scheduleTone(1568, 0.09, 'sine', 0.24, 0.1);
+    this.playTone(988, 0.05, 'square', 0.4);
+    this.scheduleTone(1318, 0.06, 'square', 0.38, 0.05);
+    this.scheduleTone(1568, 0.08, 'square', 0.34, 0.1);
+    this.scheduleTone(1976, 0.1, 'sine', 0.26, 0.16);
   }
 
-  /** 적 밟기 — 뚜렷한 '뽁' 소리 */
   playStomp(): void {
-    this.playSweep(640, 140, 0.11, 'sine', 0.72);
-    this.scheduleTone(200, 0.09, 'sine', 0.5, 0.03);
-    this.scheduleTone(320, 0.06, 'triangle', 0.42, 0.05);
-    this.playNoise(0.045, 650, 0.5);
+    this.playSweep(720, 120, 0.12, 'square', 0.78);
+    this.scheduleTone(180, 0.1, 'sine', 0.55, 0.02);
+    this.scheduleTone(440, 0.08, 'square', 0.48, 0.04);
+    this.scheduleTone(880, 0.06, 'square', 0.35, 0.06);
+    this.playNoise(0.06, 500, 0.55);
   }
 
   playHurt(): void {
-    this.playSweep(280, 80, 0.13, 'triangle', 0.36);
-    this.scheduleTone(160, 0.1, 'sine', 0.28, 0.07);
+    this.playSweep(300, 70, 0.14, 'sawtooth', 0.42);
+    this.scheduleTone(140, 0.12, 'square', 0.3, 0.06);
   }
 
   playGameOver(): void {
     this.stopBgm();
-    this.playSweep(392, 120, 0.22, 'sine', 0.32);
-    this.scheduleTone(294, 0.24, 'sine', 0.28, 0.16);
-    this.scheduleTone(196, 0.38, 'sine', 0.24, 0.34);
+    this.playSweep(440, 110, 0.22, 'triangle', 0.36);
+    this.scheduleTone(330, 0.24, 'triangle', 0.3, 0.14);
+    this.scheduleTone(196, 0.4, 'triangle', 0.26, 0.3);
   }
 
   playStageClear(): void {
-    const notes = [392, 494, 587, 784, 988];
+    const notes = [523, 659, 784, 988, 1175, 1319, 1568];
     notes.forEach((freq, i) => {
-      this.scheduleTone(freq, 0.16, 'sine', 0.28 - i * 0.03, i * 0.1);
+      this.scheduleTone(freq, 0.14, 'square', 0.34 - i * 0.03, i * 0.08);
     });
   }
 
   private startBgm(): void {
-    if (!this.ctx || this.bgmPlaying) return;
+    if (!this.ctx || !this.bgmBus) return;
+    if (this.bgmPlaying && this.bgmTimer) return;
+
+    this.stopBgm();
     this.bgmPlaying = true;
     this.bgmStep = 0;
     this.bgmTimer = setInterval(() => this.tickBgm(), STEP_MS);
@@ -179,56 +203,52 @@ export class AudioManager {
 
     const t = this.ctx.currentTime;
     const step = this.bgmStep % 64;
+    const beat = step % 16;
 
-    if (step % 16 === 0) this.playSoftKick(t);
-    if (step % 16 === 8) this.playSoftKick(t, 0.12);
+    if (beat % 4 === 0) this.playKick(t);
+    if (beat % 4 === 2) this.playSnare(t);
+    if (beat % 2 === 1) this.playHiHat(t);
 
-    const arp = ARP_LOOP[step] ?? 0;
-    if (arp > 0) this.playArp(t, arp);
+    const note = MELODY[step] ?? 0;
+    if (note > 0) this.playMelody(t, note);
 
-    const bass = SOFT_BASS[step] ?? 0;
-    if (bass > 0) this.playSoftBass(t, bass);
-
-    if (step % 16 === 0) this.playSoftPad(t, step);
+    const bass = BASS[step] ?? 0;
+    if (bass > 0) this.playBass(t, bass);
 
     this.bgmStep += 1;
   }
 
-  private playSoftKick(time: number, volume = 0.18): void {
+  private playKick(time: number): void {
     if (!this.ctx || !this.bgmBus) return;
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(90, time);
-    osc.frequency.exponentialRampToValueAtTime(48, time + 0.12);
-    gain.gain.setValueAtTime(volume, time);
-    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.14);
+    osc.frequency.setValueAtTime(140, time);
+    osc.frequency.exponentialRampToValueAtTime(48, time + 0.09);
+    gain.gain.setValueAtTime(0.38, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.11);
     osc.connect(gain);
     gain.connect(this.bgmBus);
     osc.start(time);
-    osc.stop(time + 0.16);
+    osc.stop(time + 0.13);
   }
 
-  private playArp(time: number, freq: number): void {
-    this.toneAt(time, freq, 0.2, 'sine', 0.055, this.bgmBus!, freq, 0.02);
+  private playSnare(time: number): void {
+    if (!this.bgmBus) return;
+    this.playNoiseAt(time, 0.04, 1, 1800, 0.12, this.bgmBus);
   }
 
-  private playSoftBass(time: number, freq: number): void {
-    this.toneAt(time, freq, 0.22, 'sine', 0.07, this.bgmBus!, freq, 0.015);
+  private playHiHat(time: number): void {
+    if (!this.bgmBus) return;
+    this.playNoiseAt(time, 0.018, 1, 7000, 0.05, this.bgmBus);
   }
 
-  private playSoftPad(time: number, step: number): void {
-    const bar = Math.floor(step / 16) % 4;
-    const chords = [
-      [196.0, 261.63, 329.63],
-      [146.83, 196.0, 246.94],
-      [164.81, 196.0, 246.94],
-      [130.81, 164.81, 196.0],
-    ];
-    const notes = chords[bar] ?? chords[0];
-    for (const freq of notes) {
-      this.toneAt(time, freq, 0.5, 'sine', 0.028, this.bgmBus!, freq, 0.04);
-    }
+  private playMelody(time: number, freq: number): void {
+    this.toneAt(time, freq, 0.1, 'square', 0.09, this.bgmBus!, freq, 0.004);
+  }
+
+  private playBass(time: number, freq: number): void {
+    this.toneAt(time, freq, 0.12, 'triangle', 0.14, this.bgmBus!, freq, 0.006);
   }
 
   private playSweep(

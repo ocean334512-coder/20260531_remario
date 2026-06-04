@@ -1,5 +1,6 @@
 import { HERO_TEXTURE_BOY, HERO_TEXTURE_GIRL } from '../assets/heroAssets';
 import { applyMobileDocumentClass } from '../config/gameConfig';
+import { requestAudioUnlock } from './gameAudio';
 
 const STORAGE_KEY_NAME = 'mario-username';
 const STORAGE_KEY_CHARACTER = 'mario-character';
@@ -102,6 +103,7 @@ export function waitForPlayerName(): Promise<string> {
       localStorage.setItem(STORAGE_KEY_CHARACTER, playerCharacter);
       overlay.classList.add('name-entry--hidden');
       applyMobileDocumentClass();
+      requestAudioUnlock();
       resolve(name);
     };
 

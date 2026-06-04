@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { getAudio } from '../systems/AudioManager';
+import { ImpactFx } from '../systems/ImpactFx';
 import { getHeroTextureKey } from '../services/playerSession';
 import type { TouchControls } from '../systems/TouchControls';
 
@@ -27,6 +28,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private blinkTween: Phaser.Tweens.Tween | null = null;
   private touch: TouchControls | null = null;
   private readonly heroTexture: string;
+  private footstepAcc = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     const heroTexture = getHeroTextureKey();
@@ -122,6 +124,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const right =
       (this.cursors?.right.isDown ?? false) || (this.touch?.rightDown ?? false);
 
+    const moving = left !== right && (left || right);
+
     if (left && !right) {
       body.setVelocityX(-MOVE_SPEED);
       this.setFlipX(true);
@@ -130,6 +134,22 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.setFlipX(false);
     } else {
       body.setVelocityX(0);
+    }
+
+    if (moving && body.onFloor()) {
+      this.footstepAcc += this.scene.game.loop.delta;
+      if (this.footstepAcc >= 140) {
+        this.footstepAcc = 0;
+        getAudio(this.scene)?.playRunStep();
+        ImpactFx.runTrail(
+          this.scene,
+          this.x,
+          this.y + this.displayHeight * 0.45,
+          this.flipX,
+        );
+      }
+    } else {
+      this.footstepAcc = 0;
     }
 
     this.updateAnimation();
@@ -155,6 +175,12 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private playLandSquash(): void {
     this.landingUntil = this.scene.time.now + 140;
+    getAudio(this.scene)?.playLand();
+    ImpactFx.landImpact(
+      this.scene,
+      this.x,
+      this.y + this.displayHeight * 0.48,
+    );
     this.scene.tweens.killTweensOf(this);
     this.setAlpha(1);
     this.scene.tweens.add({

@@ -11,6 +11,7 @@ import { HopperEnemy } from '../entities/HopperEnemy';
 import { FlagPole } from '../entities/FlagPole';
 import { handlePlayerEnemyCollision } from '../systems/CollisionHandler';
 import { getAudio, setupAudioForScene } from '../systems/AudioManager';
+import { ImpactFx } from '../systems/ImpactFx';
 import type { TouchControls } from '../systems/TouchControls';
 import { recordStagePlay } from '../services/playCountService';
 import { clampProgressM, pixelsToMeters } from '../utils/distance';
@@ -36,6 +37,7 @@ export class GameScene extends Phaser.Scene {
   private maxProgressM = 0;
   private runStartAt = 0;
   private runStopped = false;
+  private bgmWatchAt = 0;
 
   constructor() {
     super('GameScene');
@@ -118,6 +120,8 @@ export class GameScene extends Phaser.Scene {
         p as Phaser.Types.Physics.Arcade.GameObjectWithBody,
         e as Phaser.Types.Physics.Arcade.GameObjectWithBody,
         () => {
+          const enemy = e as Enemy;
+          ImpactFx.enemyDefeat(this, enemy.x, enemy.y);
           this.addScore(200);
           getAudio(this)?.playStomp();
         },
@@ -138,6 +142,7 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.coins, (_p, coin) => {
       if (this.player.inputLocked) return;
       const coinSprite = coin as Phaser.Physics.Arcade.Sprite;
+      ImpactFx.coinSparkle(this, coinSprite.x, coinSprite.y);
       coinSprite.disableBody(true, true);
       this.addScore(100);
       getAudio(this)?.playCoin();
@@ -178,6 +183,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(): void {
+    if (this.time.now - this.bgmWatchAt > 2500) {
+      getAudio(this)?.ensureBgmPlaying();
+      this.bgmWatchAt = this.time.now;
+    }
+
     if (this.isGameOver) return;
     if (this.isStageClear && !this.player.inputLocked) return;
 
