@@ -1,11 +1,15 @@
 import { getApiBaseForDisplay } from '../config/apiConfig';
 import { formatLeaderboardScore } from '../utils/finalScore';
 import { getPlayerName } from './playerSession';
-import { fetchLeaderboardFromCache, submitAndFetchLeaderboard } from './leaderboardApi';
+import {
+  fetchLeaderboardFromCache,
+  getPrefetchedLeaderboard,
+  submitAndFetchLeaderboard,
+} from './leaderboardApi';
 import {
   cachePlayerRun,
   isSamePlayer,
-  padLeaderboardToTen,
+  padLeaderboardSlots,
   type DisplayLeaderboardEntry,
 } from './leaderboardStore';
 
@@ -15,21 +19,56 @@ export type RunResult = {
   elapsedMs: number;
 };
 
+let closeBound = false;
+
+function getModalElements(): {
+  modal: HTMLElement | null;
+  list: HTMLElement | null;
+  status: HTMLElement | null;
+  closeBtn: HTMLElement | null;
+} {
+  return {
+    modal: document.getElementById('leaderboard-modal'),
+    list: document.getElementById('leaderboard-list'),
+    status: document.getElementById('leaderboard-status'),
+    closeBtn: document.getElementById('leaderboard-close'),
+  };
+}
+
+function bindCloseHandlers(): void {
+  if (closeBound) return;
+  closeBound = true;
+
+  const { modal, closeBtn } = getModalElements();
+  closeBtn?.addEventListener('click', () => {
+    hideLeaderboard();
+  });
+
+  modal?.querySelector('.leaderboard-modal__backdrop')?.addEventListener('click', () => {
+    hideLeaderboard();
+  });
+}
+
 export function renderLeaderboard(
   entries: DisplayLeaderboardEntry[],
   currentPlayer?: string,
+  options?: { fromServer?: boolean; loading?: boolean },
 ): void {
-  const panel = document.getElementById('leaderboard-panel');
-  const list = document.getElementById('leaderboard-list');
-  const status = document.getElementById('leaderboard-status');
-  if (!panel || !list || !status) return;
+  bindCloseHandlers();
+  const { modal, list, status } = getModalElements();
+  if (!modal || !list || !status) return;
 
   list.innerHTML = '';
   const hasRealEntries = entries.some((entry) => !entry.empty);
-  if (!hasRealEntries) {
+
+  if (options?.loading) {
+    status.textContent = '순위 불러오는 중…';
+  } else if (!hasRealEntries) {
     status.textContent = '아직 기록이 없습니다.';
+  } else if (options?.fromServer === false) {
+    status.textContent = '서버 연결 전 — 이 기기에 저장된 기록만 표시';
   } else {
-    status.textContent = '합산 점수 순위';
+    status.textContent = '전체 플레이어 공통 순위 (서버)';
   }
 
   entries.forEach((entry) => {
@@ -49,15 +88,18 @@ export function renderLeaderboard(
     list.appendChild(li);
   });
 
-  panel.hidden = false;
+  modal.hidden = false;
+  document.body.classList.add('leaderboard-open');
 
   const touchRoot = document.getElementById('touch-controls');
   if (touchRoot) touchRoot.hidden = true;
 }
 
 export function hideLeaderboard(): void {
-  const panel = document.getElementById('leaderboard-panel');
-  if (panel) panel.hidden = true;
+  const { modal } = getModalElements();
+  if (modal) modal.hidden = true;
+  document.body.classList.remove('leaderboard-open');
+
   const touchRoot = document.getElementById('touch-controls');
   if (touchRoot && document.documentElement.classList.contains('is-mobile')) {
     touchRoot.hidden = false;
@@ -65,42 +107,49 @@ export function hideLeaderboard(): void {
 }
 
 export async function saveAndLoadLeaderboard(result: RunResult): Promise<void> {
-  const panel = document.getElementById('leaderboard-panel');
-  const status = document.getElementById('leaderboard-status');
-  if (panel) panel.hidden = false;
-  if (status) status.textContent = '기록 저장 중… (첫 요청은 30초 걸릴 수 있음)';
-
+  bindCloseHandlers();
   const username = getPlayerName();
+
   cachePlayerRun(username, result.gameScore, result.distanceM, result.elapsedMs);
 
-  if (status) status.textContent = '순위표 저장·동기화 중…';
+  const prefetched = getPrefetchedLeaderboard();
+  const instant = prefetched?.length
+    ? padLeaderboardSlots(prefetched)
+    : padLeaderboardSlots(fetchLeaderboardFromCache());
 
-  const entries = await submitAndFetchLeaderboard(
-    username,
-    result.gameScore,
-    result.distanceM,
-    result.elapsedMs,
-  );
+  renderLeaderboard(instant, username, {
+    fromServer: !!prefetched?.length,
+    loading: true,
+  });
 
-  const fromServer = entries.some((e) => e.total_score > 0);
-  renderLeaderboard(padLeaderboardToTen(entries), username);
+  try {
+    const { entries, fromServer } = await submitAndFetchLeaderboard(
+      username,
+      result.gameScore,
+      result.distanceM,
+      result.elapsedMs,
+    );
 
-  if (status) {
-    if (fromServer) {
-      status.textContent = '순위가 서버에 저장되었습니다 (업데이트 후에도 유지)';
-    } else {
-      const hint = import.meta.env.DEV
-        ? '터미널에서 npm run dev:api 실행 후 다시 시도'
-        : '잠시 후 새로고침';
-      status.textContent = `서버 연결 실패 — 이 기기에 저장된 기록 표시 (${hint})`;
+    renderLeaderboard(padLeaderboardSlots(entries), username, { fromServer });
+
+    if (!fromServer) {
+      const { status } = getModalElements();
+      if (status) {
+        const hint = import.meta.env.DEV
+          ? 'npm run dev:api 실행 후 다시 시도'
+          : '잠시 후 다시 플레이';
+        status.textContent = `서버 연결 실패 — 오프라인 기록 (${hint}) · API: ${getApiBaseForDisplay()}`;
+      }
     }
-  }
-
-  if (!fromServer && entries.length === 0) {
-    const cached = fetchLeaderboardFromCache();
-    renderLeaderboard(padLeaderboardToTen(cached), username);
+  } catch {
+    renderLeaderboard(
+      padLeaderboardSlots(fetchLeaderboardFromCache()),
+      username,
+      { fromServer: false },
+    );
+    const { status } = getModalElements();
     if (status) {
-      status.textContent = `순위표를 불러오지 못했습니다. API: ${getApiBaseForDisplay()}`;
+      status.textContent = `순위를 불러오지 못했습니다. API: ${getApiBaseForDisplay()}`;
     }
   }
 }

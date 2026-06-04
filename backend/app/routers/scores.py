@@ -42,7 +42,7 @@ def sync_scores(body: BulkScoreSync):
 
 
 @router.get("/leaderboard", response_model=LeaderboardResponse)
-def get_leaderboard(limit: int = Query(default=10, ge=1, le=50)):
+def get_leaderboard(limit: int = Query(default=20, ge=1, le=50)):
     with get_connection() as conn:
         if use_postgres():
             cur = conn.cursor()

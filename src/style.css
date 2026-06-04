@@ -492,53 +492,83 @@ html.is-mobile .touch-controls__btn--jump {
   filter: brightness(1.08);
 }
 
-/* ── TOP 10 순위표 (게임 오버) ── */
-@media (orientation: landscape) and (max-height: 520px) {
-  .leaderboard-panel {
-    bottom: auto;
-    top: max(10px, env(safe-area-inset-top));
-    max-height: 38vh;
-  }
+/* ── TOP 20 순위 모달 (게임 오버) ── */
+body.leaderboard-open {
+  overflow: hidden;
 }
 
-.leaderboard-panel {
+.leaderboard-modal {
   position: fixed;
-  left: 50%;
-  bottom: max(16px, env(safe-area-inset-bottom));
-  transform: translateX(-50%);
+  inset: 0;
   z-index: 10001;
-  width: min(420px, calc(100% - 24px));
-  max-height: 42vh;
-  overflow-y: auto;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.82);
-  border: 2px solid #ffeb3b;
-  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  pointer-events: auto;
+}
+
+.leaderboard-modal[hidden] {
+  display: none !important;
+}
+
+.leaderboard-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+}
+
+.leaderboard-modal__dialog {
+  position: relative;
+  z-index: 1;
+  width: min(440px, 100%);
+  max-height: min(88vh, 92dvh);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px 14px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #1e1e42 0%, #12122a 100%);
+  border: 3px solid #ffeb3b;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
 }
 
 .leaderboard-panel__title {
   font-family: monospace;
-  font-size: 18px;
+  font-size: 20px;
   color: #ffeb3b;
   text-align: center;
+  margin-bottom: 4px;
+  flex-shrink: 0;
+}
+
+.leaderboard-panel__subtitle {
+  font-family: monospace;
+  font-size: 11px;
+  color: #9ecfff;
+  text-align: center;
   margin-bottom: 10px;
+  flex-shrink: 0;
 }
 
 .leaderboard-panel__list {
   list-style: none;
   padding: 0;
   margin: 0;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .leaderboard-panel__item {
   display: grid;
-  grid-template-columns: 44px 1fr auto;
-  gap: 6px 10px;
+  grid-template-columns: 40px 1fr auto;
+  gap: 4px 8px;
   align-items: center;
-  padding: 8px 4px;
+  padding: 6px 2px;
   font-family: monospace;
-  font-size: 14px;
+  font-size: 13px;
   color: #fff;
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
@@ -576,9 +606,30 @@ html.is-mobile .touch-controls__btn--jump {
 
 .leaderboard-panel__status {
   font-family: monospace;
-  font-size: 12px;
+  font-size: 11px;
   color: #aaa;
   text-align: center;
   margin-top: 8px;
+  flex-shrink: 0;
+}
+
+.leaderboard-panel__close {
+  margin-top: 12px;
+  width: 100%;
+  padding: 14px;
+  font-family: monospace;
+  font-size: 18px;
+  font-weight: bold;
+  color: #1a1a2e;
+  background: #ffeb3b;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+
+.leaderboard-panel__close:active {
+  transform: scale(0.98);
 }
 

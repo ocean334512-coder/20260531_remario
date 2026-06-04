@@ -5,7 +5,7 @@ const EDGE_PX = 28;
 function isInteractiveUi(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
   return !!target.closest(
-    '.touch-controls, .touch-controls__btn, .game-exit, .leaderboard-panel, .name-entry',
+    '.touch-controls, .touch-controls__btn, .game-exit, .leaderboard-modal, .leaderboard-panel__close, .name-entry',
   );
 }
 

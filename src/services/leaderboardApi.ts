@@ -1,9 +1,11 @@
 import { apiUrl } from '../config/apiConfig';
 import {
+  buildOfflineLeaderboard,
   cachePlayerRun,
   getAllCachedRuns,
+  ingestServerEntries,
   LEADERBOARD_SIZE,
-  mergeLeaderboardEntries,
+  rankServerEntries,
 } from './leaderboardStore';
 
 export type LeaderboardEntry = {
@@ -16,17 +18,29 @@ export type LeaderboardEntry = {
   time_bonus: number;
 };
 
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => {
-    window.setTimeout(resolve, ms);
-  });
+export type LeaderboardFetchResult = {
+  entries: LeaderboardEntry[];
+  fromServer: boolean;
+};
 
-/** 로컬에 쌓인 모든 기록을 서버 DB·백업 파일로 동기화 */
+let prefetchedGlobal: LeaderboardEntry[] | null = null;
+
+async function fetchWithTimeout(url: string, init: RequestInit, ms = 8000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+/** 로컬 기록을 서버로 (백그라운드) */
 export async function syncCacheToServer(): Promise<void> {
   const items = getAllCachedRuns();
   if (items.length === 0) return;
 
-  const res = await fetch(apiUrl('/api/scores/sync'), {
+  const res = await fetchWithTimeout(apiUrl('/api/scores/sync'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items }),
@@ -36,21 +50,56 @@ export async function syncCacheToServer(): Promise<void> {
   }
 }
 
-export async function syncCacheToServerWithRetry(attempts = 5): Promise<boolean> {
-  let lastError: unknown;
-  for (let i = 0; i < attempts; i += 1) {
-    try {
-      await syncCacheToServer();
-      return true;
-    } catch (err) {
-      lastError = err;
-      if (i < attempts - 1) {
-        await sleep(1500 * (i + 1));
-      }
-    }
+export function syncCacheToServerBackground(): void {
+  void syncCacheToServer().catch(() => {
+    /* 다음 기회에 재시도 */
+  });
+}
+
+/** 게임 시작 전 전역 순위 미리 받기 */
+export async function prefetchGlobalLeaderboard(
+  limit = LEADERBOARD_SIZE,
+): Promise<LeaderboardEntry[]> {
+  const result = await fetchGlobalLeaderboard(limit);
+  if (result.fromServer) {
+    prefetchedGlobal = result.entries;
   }
-  console.warn('[leaderboard] server sync failed', lastError);
-  return false;
+  return result.entries;
+}
+
+export function getPrefetchedLeaderboard(): LeaderboardEntry[] | null {
+  return prefetchedGlobal;
+}
+
+export function clearPrefetchedLeaderboard(): void {
+  prefetchedGlobal = null;
+}
+
+/** 전 세계 공통 순위 (서버 DB 기준) */
+export async function fetchGlobalLeaderboard(
+  limit = LEADERBOARD_SIZE,
+): Promise<LeaderboardFetchResult> {
+  try {
+    const res = await fetchWithTimeout(
+      apiUrl(`/api/scores/leaderboard?limit=${limit}`),
+      { method: 'GET' },
+      8000,
+    );
+    if (!res.ok) {
+      throw new Error(`leaderboard failed: ${res.status}`);
+    }
+    const data = (await res.json()) as { items: LeaderboardEntry[] };
+    const serverItems = data.items ?? [];
+    ingestServerEntries(serverItems);
+    const entries = rankServerEntries(serverItems);
+    prefetchedGlobal = entries;
+    return { entries, fromServer: true };
+  } catch {
+    return {
+      entries: buildOfflineLeaderboard(limit),
+      fromServer: false,
+    };
+  }
 }
 
 export async function submitScore(
@@ -61,7 +110,7 @@ export async function submitScore(
 ): Promise<void> {
   cachePlayerRun(username, gameScore, distanceM, elapsedMs);
 
-  const res = await fetch(apiUrl('/api/scores'), {
+  const res = await fetchWithTimeout(apiUrl('/api/scores'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -76,55 +125,26 @@ export async function submitScore(
   }
 }
 
-export async function fetchLeaderboard(limit = LEADERBOARD_SIZE): Promise<LeaderboardEntry[]> {
-  const res = await fetch(apiUrl(`/api/scores/leaderboard?limit=${limit}`));
-  if (!res.ok) {
-    throw new Error(`leaderboard failed: ${res.status}`);
-  }
-  const data = (await res.json()) as { items: LeaderboardEntry[] };
-  const serverItems = data.items ?? [];
-  return mergeLeaderboardEntries(serverItems, limit);
-}
-
-export async function fetchLeaderboardWithRetry(
-  limit = LEADERBOARD_SIZE,
-  attempts = 3,
-): Promise<LeaderboardEntry[]> {
-  let lastError: unknown;
-  for (let i = 0; i < attempts; i += 1) {
-    try {
-      return await fetchLeaderboard(limit);
-    } catch (err) {
-      lastError = err;
-      if (i < attempts - 1) await sleep(4000);
-    }
-  }
-  throw lastError;
-}
-
 export function fetchLeaderboardFromCache(limit = LEADERBOARD_SIZE): LeaderboardEntry[] {
-  return mergeLeaderboardEntries([], limit);
+  return buildOfflineLeaderboard(limit);
 }
 
-/** 저장 후 서버·로컬·백업을 맞춘 뒤 순위표 반환 */
+/** 저장 후 전역 순위 반환 (빠른 표시 → 서버 갱신) */
 export async function submitAndFetchLeaderboard(
   username: string,
   gameScore: number,
   distanceM: number,
   elapsedMs: number,
   limit = LEADERBOARD_SIZE,
-): Promise<LeaderboardEntry[]> {
+): Promise<LeaderboardFetchResult> {
+  cachePlayerRun(username, gameScore, distanceM, elapsedMs);
+  syncCacheToServerBackground();
+
   try {
     await submitScore(username, gameScore, distanceM, elapsedMs);
   } catch {
-    /* 로컬에는 이미 저장됨 */
+    /* 로컬 저장됨 */
   }
 
-  await syncCacheToServerWithRetry(4);
-
-  try {
-    return await fetchLeaderboardWithRetry(limit);
-  } catch {
-    return fetchLeaderboardFromCache(limit);
-  }
+  return fetchGlobalLeaderboard(limit);
 }

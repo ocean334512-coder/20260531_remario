@@ -6,7 +6,8 @@ export const LEADERBOARD_STORAGE_KEY = 'mario-leaderboard-records';
 const STORAGE_KEY = LEADERBOARD_STORAGE_KEY;
 const LEGACY_KEYS = ['mario-leaderboard-cache-v2', 'mario-leaderboard-cache-v1'];
 
-export const LEADERBOARD_SIZE = 10;
+/** 표시할 순위 슬롯 수 (전 세계 공통) */
+export const LEADERBOARD_SIZE = 20;
 
 export type RunRecord = {
   username: string;
@@ -110,6 +111,27 @@ function persistCache(map: Map<string, RunRecord>): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
+/** 서버에서 받은 전역 순위를 로컬 백업에 병합 (표시는 서버 목록 우선) */
+export function ingestServerEntries(serverEntries: LeaderboardEntry[]): void {
+  const map = loadCacheMap();
+  for (const entry of serverEntries) {
+    const key = usernameKey(entry.username);
+    const record: RunRecord = {
+      username: entry.username,
+      game_score: entry.game_score,
+      distance_m: entry.distance_m,
+      elapsed_ms: entry.elapsed_sec * 1000,
+      time_bonus: entry.time_bonus,
+      total_score: entry.total_score,
+    };
+    const prev = map.get(key);
+    if (!prev || record.total_score > prev.total_score) {
+      map.set(key, record);
+    }
+  }
+  persistCache(map);
+}
+
 export function cachePlayerRun(
   username: string,
   gameScore: number,
@@ -149,31 +171,17 @@ export function getAllCachedRuns(): Array<{
   }));
 }
 
-export function mergeLeaderboardEntries(
-  serverEntries: LeaderboardEntry[],
-  limit = LEADERBOARD_SIZE,
-): LeaderboardEntry[] {
-  const map = loadCacheMap();
+/** 서버 응답 → 순위 목록 (전 세계 동일) */
+export function rankServerEntries(serverEntries: LeaderboardEntry[]): LeaderboardEntry[] {
+  return serverEntries.slice(0, LEADERBOARD_SIZE).map((entry, index) => ({
+    ...entry,
+    rank: index + 1,
+  }));
+}
 
-  for (const entry of serverEntries) {
-    const key = usernameKey(entry.username);
-    const record: RunRecord = {
-      username: entry.username,
-      game_score: entry.game_score,
-      distance_m: entry.distance_m,
-      elapsed_ms: entry.elapsed_sec * 1000,
-      time_bonus: entry.time_bonus,
-      total_score: entry.total_score,
-    };
-    const prev = map.get(key);
-    if (!prev || record.total_score > prev.total_score) {
-      map.set(key, record);
-    }
-  }
-
-  persistCache(map);
-
-  return [...map.values()]
+/** 오프라인: 로컬에 쌓인 모든 사용자 기록 중 상위 N */
+export function buildOfflineLeaderboard(limit = LEADERBOARD_SIZE): LeaderboardEntry[] {
+  return [...loadCacheMap().values()]
     .sort(
       (a, b) =>
         b.total_score - a.total_score ||
@@ -194,13 +202,16 @@ export function mergeLeaderboardEntries(
 
 export type DisplayLeaderboardEntry = LeaderboardEntry & { empty?: boolean };
 
-export function padLeaderboardToTen(entries: LeaderboardEntry[]): DisplayLeaderboardEntry[] {
-  const filled: DisplayLeaderboardEntry[] = entries.slice(0, LEADERBOARD_SIZE).map((entry, index) => ({
+export function padLeaderboardSlots(
+  entries: LeaderboardEntry[],
+  size = LEADERBOARD_SIZE,
+): DisplayLeaderboardEntry[] {
+  const filled: DisplayLeaderboardEntry[] = entries.slice(0, size).map((entry, index) => ({
     ...entry,
     rank: index + 1,
   }));
 
-  while (filled.length < LEADERBOARD_SIZE) {
+  while (filled.length < size) {
     filled.push({
       rank: filled.length + 1,
       username: '—',
@@ -219,3 +230,6 @@ export function padLeaderboardToTen(entries: LeaderboardEntry[]): DisplayLeaderb
 export function isSamePlayer(a: string, b: string): boolean {
   return usernameKey(a) === usernameKey(b);
 }
+
+/** @deprecated padLeaderboardSlots 사용 */
+export const padLeaderboardToTen = padLeaderboardSlots;

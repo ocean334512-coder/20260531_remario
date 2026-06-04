@@ -1,4 +1,7 @@
-import { syncCacheToServerWithRetry } from './leaderboardApi';
+import {
+  prefetchGlobalLeaderboard,
+  syncCacheToServerBackground,
+} from './leaderboardApi';
 
 let installed = false;
 
@@ -8,7 +11,7 @@ export function installLeaderboardPersistence(): void {
   installed = true;
 
   const flush = (): void => {
-    void syncCacheToServerWithRetry(3);
+    syncCacheToServerBackground();
   };
 
   window.addEventListener('visibilitychange', () => {
@@ -19,10 +22,12 @@ export function installLeaderboardPersistence(): void {
   window.addEventListener('pagehide', flush);
 }
 
-/** 게임 시작 전 로컬 기록을 서버에 복구 (최대 waitMs) */
-export async function restoreLeaderboardOnBoot(waitMs = 12_000): Promise<void> {
+/** 게임 시작 전 전역 순위 미리 받기 (게임 시작 지연 최소화) */
+export async function restoreLeaderboardOnBoot(waitMs = 5000): Promise<void> {
+  syncCacheToServerBackground();
+
   await Promise.race([
-    syncCacheToServerWithRetry(5),
+    prefetchGlobalLeaderboard(),
     new Promise<void>((resolve) => {
       window.setTimeout(resolve, waitMs);
     }),

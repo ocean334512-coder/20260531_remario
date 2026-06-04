@@ -45,10 +45,22 @@
         </form>
       </div>
     </div>
-    <div id="leaderboard-panel" class="leaderboard-panel" hidden>
-      <h2 class="leaderboard-panel__title">🏆 TOP 10</h2>
-      <ol id="leaderboard-list" class="leaderboard-panel__list"></ol>
-      <p id="leaderboard-status" class="leaderboard-panel__status"></p>
+    <div id="leaderboard-modal" class="leaderboard-modal" hidden aria-hidden="true">
+      <div class="leaderboard-modal__backdrop" aria-hidden="true"></div>
+      <div
+        class="leaderboard-modal__dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="leaderboard-title"
+      >
+        <h2 id="leaderboard-title" class="leaderboard-panel__title">🏆 TOP 20</h2>
+        <p class="leaderboard-panel__subtitle">전체 플레이어 공통 순위</p>
+        <ol id="leaderboard-list" class="leaderboard-panel__list"></ol>
+        <p id="leaderboard-status" class="leaderboard-panel__status"></p>
+        <button type="button" id="leaderboard-close" class="leaderboard-panel__close">
+          확인
+        </button>
+      </div>
     </div>
     <button
       type="button"
